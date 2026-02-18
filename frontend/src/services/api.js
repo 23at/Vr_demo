@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:8000", // update to your backend URL
+    baseURL: "http://localhost:8000", // update to our backend URL,,,, I need to re-install my vscode so i am pushing this early.
 });
 
 export const login = (email, password) =>
