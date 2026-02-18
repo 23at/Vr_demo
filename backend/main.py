@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from .models import User, Module
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="supersecret")
@@ -106,3 +107,11 @@ def get_module(module_id: int,request: Request ,db: Session = Depends(get_db)):
     if not mod:
         raise HTTPException(status_code=404, detail="Module not found")
     return mod
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
