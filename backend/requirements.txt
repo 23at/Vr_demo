@@ -1,0 +1,5 @@
+fastapi
+sqlalchemy
+uvicorn
+pydantic
+passlib[bcrypt]==1.7.4
