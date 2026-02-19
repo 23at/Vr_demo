@@ -7,12 +7,13 @@ from sqlalchemy.orm import Session
 from .models import User, Module
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="supersecret")
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -106,3 +107,11 @@ def get_module(module_id: int,request: Request ,db: Session = Depends(get_db)):
     if not mod:
         raise HTTPException(status_code=404, detail="Module not found")
     return mod
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
