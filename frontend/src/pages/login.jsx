@@ -10,18 +10,23 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/login", { username, password });
+      await api.post("/login", {
+        username,
+        password
+      });
+
       navigate("/dashboard");
-    } catch {
-      alert("Login failed");
+    } catch (err) {
+      alert("Invalid credentials");
     }
   };
 
   return (
     <div>
-      <h2>VR Training Login</h2>
+      <h2>Login</h2>
       <form onSubmit={handleSubmit}>
         <input
+          type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
