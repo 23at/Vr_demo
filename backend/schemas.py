@@ -20,12 +20,15 @@ class LoginRequest(BaseModel):
 class ModuleCreate(BaseModel):
     title: str
     description: str | None = None
+    scene_name:str
+
+
 
 class ModuleResponse(BaseModel):
     id: int
     title: str
     description: str | None = None
     is_active: bool
-
+    scene_name:str
     class Config:
         orm_mode = True

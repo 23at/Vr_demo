@@ -20,6 +20,7 @@ class Module(Base):
     title = Column(String, unique=True, index=True)
     description = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
+    scene_name=Column(String,unique=True, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     creator = relationship("User", back_populates="modules")

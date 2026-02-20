@@ -85,7 +85,7 @@ def create_module(module: ModuleCreate,request: Request,db: Session = Depends(ge
     if "user_id" not in request.session:
         raise HTTPException(status_code=401, detail="You must be logged in to create a module")
     
-    db_module = Module(title=module.title, description=module.description)
+    db_module = Module(title=module.title, description=module.description, scene_name=module.scene_name)
     db.add(db_module)
     db.commit()
     db.refresh(db_module)
