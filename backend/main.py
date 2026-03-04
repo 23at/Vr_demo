@@ -4,7 +4,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from .schemas import LoginRequest, ModuleResponse, ModuleCreate
 from .database import Base, engine, get_db
 from sqlalchemy.orm import Session
-from .models import User, Module
+from .models import User, TrainingModule,TrainingSession, Progress,Scenario
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -107,6 +107,10 @@ def get_module(module_id: int,request: Request ,db: Session = Depends(get_db)):
     if not mod:
         raise HTTPException(status_code=404, detail="Module not found")
     return mod
+
+@app.get("/users/")
+def read_users(db: Session = Depends(get_db)):
+    return db.query(User).all()
 
 app.add_middleware(
     CORSMiddleware,
