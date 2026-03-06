@@ -37,8 +37,7 @@ export default function Dashboard() {
     const sessionUrl = `https://your-vr-host.com/module/${module.id}`;
     const encoded = encodeURIComponent(sessionUrl);
 
-    window.location.href =
-      `https://www.oculus.com/open_url/?url=${encoded}`;
+    window.location.href = `vrtraining://start?scene=${module.scene_name}`;
   };
 
   return (
