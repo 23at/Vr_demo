@@ -1,0 +1,123 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Full page layout */ 
+.login-page { 
+    height: 100vh; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    background-color: #f4f6f8; 
+    font-family: Arial, Helvetica, sans-serif;
+ }
+  /* Login card */ 
+  .login-box { 
+    background: white; 
+    padding: 40px; 
+    border-radius: 10px; 
+    width: 320px; 
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.15); 
+    text-align: center;
+ } 
+ /* Title */ 
+ .title { 
+    margin-bottom: 25px;
+ }
+/* Form layout */ 
+.login-form {
+     display: flex;
+      flex-direction: column;
+     }
+/* Input styling */
+.input-field {
+    padding: 10px; 
+    margin-bottom: 12px; 
+    border-radius: 5px; 
+    border: 1px solid #ccc; 
+    font-size: 14px;
+}
+
+/* Login button */
+.login-button { 
+    padding: 10px; 
+    background-color: #2a7ae4;
+    color: white; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+}
+/* Create account button */ 
+.create-button { 
+    margin-top: 12px; 
+    background: none; 
+    border: none; 
+    color: #2a7ae4; 
+    cursor: pointer; 
+    font-size: 14px; 
+} 
+.create-button:hover { 
+    text-decoration: underline; 
+}
+
+/*------------------------------------------------/*
+
+/* Dashboard layout */
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid black;
+  padding: 10px 20px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dashboard-title {
+  margin: 0;
+}
+
+.user-id {
+  font-weight: bold;
+}
+
+.module-list {
+  margin-top: 0;
+}
+
+.module-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid black;
+  padding: 15px 20px;
+}
+
+.module-link {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+  width: 200px;
+}
+
+.module-name {
+  flex: 1;
+  font-size: 20px;
+}
+
+.status {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 2px solid gray;
+  font-weight: bold;
+}
+
+.status.complete {
+  color: green;
+}
+
+.status.incomplete {
+  color: red;
+}

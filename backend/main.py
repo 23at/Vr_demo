@@ -73,6 +73,15 @@ def logout(request: Request):
         request.session.pop("user_id")
         return {"message": "Logged out successfully"}
     
+@app.get("/me")
+def get_current_user(request: Request):
+    username = request.session.get("user")
+
+    if not username:
+        return {"username": None}
+
+    return {"username": username}
+    
 @app.get("/protected")
 def protected(request: Request):
     if "user_id" not in request.session:
