@@ -18,7 +18,6 @@ pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 # Create tables
 Base.metadata.create_all(bind=engine)
 
-# Register route in main.py
 class RegisterRequest(BaseModel):
     username: str
     email: str
