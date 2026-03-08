@@ -2,10 +2,17 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 
 export default function Dashboard() {
-  const [modules, setModules] = useState([]);
+/*const [modules, setModules] = useState([]);*activate when backend is ready*/
+  const [modules, setModules] = useState([
+  { id: 1, title: "Railcar Inspection", completed: false },
+  { id: 2, title: "Loading", completed: true },
+  { id: 3, title: "Post-Load", completed: true }
+]);
+  const [user, setUser] = useState("");
 
   useEffect(() => {
-    loadModules();
+  //loadModules(); disabled for UI testing//
+ // loadUser();
   }, []);
 
   const loadModules = async () => {
@@ -17,8 +24,16 @@ export default function Dashboard() {
     }
   };
 
+  const loadUser = async () => {
+    try {
+      const res = await api.get("/me"); // backend endpoint that returns logged-in user
+      setUser(res.data.username);
+    } catch (err) {
+      console.error("Could not load user");
+    }
+  };
+
   const launchVR = (module) => {
-    // Replace with actual WebXR URL when ready
     const sessionUrl = `https://your-vr-host.com/module/${module.id}`;
     const encoded = encodeURIComponent(sessionUrl);
 
@@ -26,19 +41,48 @@ export default function Dashboard() {
   };
 
   return (
-    <div>
-      <h2>Training Modules</h2>
+    <div className="dashboard-page">
 
-      {modules.map((mod) => (
-        <div key={mod.id}>
-          <h3>{mod.title}</h3>
-          <p>{mod.description}</p>
+      {/* Header */}
+      <div className="dashboard-header">
+        <div className="home-icon">🏠</div>
+        <h1 className="dashboard-title">VTRAIN</h1>
+        <div className="user-id">User: {user}</div>
+      </div>
 
-          <button onClick={() => launchVR(mod)}>
-            Launch in VR
-          </button>
-        </div>
-      ))}
+      {/* Module List */}
+      <div className="module-list">
+        {modules.map((mod) => (
+          <div key={mod.id} className="module-row">
+
+            {/* WebXR Launch Link */}
+            <div
+              className="module-link"
+              onClick={() => launchVR(mod)}
+            >
+              VR Training #{mod.id}
+            </div>
+
+            {/* Module Name */}
+            <div className="module-name">
+              {mod.title}
+            </div>
+
+            {/* Completion Status */}
+            <div
+              className={
+                mod.completed
+                  ? "status complete"
+                  : "status incomplete"
+              }
+            >
+              {mod.completed ? "Complete" : "Incomplete"}
+            </div>
+
+          </div>
+        ))}
+      </div>
+
     </div>
   );
 }
