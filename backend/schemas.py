@@ -133,3 +133,11 @@ class SessionResponse(BaseModel):
     session_index: int
     score: float | None = None
     total_duration: float | None = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None

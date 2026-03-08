@@ -13,13 +13,18 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/login", {
-        username,
-        password
-      });
+      const params=new URLSearchParams();
+      params.append("username", username);
+      params.append("password", password);
 
+      const response = await api.post("/auth/token",params, {
+        headers: {"Content-Type": "application/x-www-form-urlencoded" },
+      });
+      const token = response.data.access_token;
+      localStorage.setItem("access_token", token)
       navigate("/dashboard");
     } catch (err) {
+      console.error("login failed:", err)
       alert("Invalid credentials");
     }
   };
