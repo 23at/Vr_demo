@@ -1,10 +1,10 @@
 # models.py
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum, UniqueConstraint, DateTime,Text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum, UniqueConstraint, DateTime,Text, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from .schemas import Role, ProgressStatus, SessionStatus
+from .schemas import Role, ProgressStatus, SessionStatus,AccessLevel
 Base = declarative_base()
 
 
@@ -18,9 +18,10 @@ class User(Base):
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum(Role), nullable=True)
+    role = Column(Enum(Role), nullable=False, default=Role.USER)
 
     # Relationships
+    assigned_modules = relationship("UserModule",back_populates="user",cascade="all, delete-orphan")
     progress_records = relationship("Progress", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -39,7 +40,7 @@ class TrainingModule(Base):
     # Relationships
     scenarios = relationship("Scenario", back_populates="module", cascade="all, delete-orphan")
     progress_records = relationship("Progress", back_populates="module", cascade="all, delete-orphan")
-
+    assigned_users = relationship( "UserModule",back_populates="module",cascade="all, delete-orphan")
     
 
 
@@ -54,7 +55,8 @@ class TrainingSession(Base):
     session_status = Column(Enum(SessionStatus), nullable=True)
     session_index = Column(Integer, nullable=False)
     score = Column(Integer, nullable=True)
-    total_duration = Column(Integer, nullable=True)  
+    total_duration = Column(Integer, nullable=True) 
+    session_token=Column(String, nullable=False) 
 
     __table_args__ = (
         UniqueConstraint("progress_id", "scenario_id", "session_index", name="uq_session_progress_scenario_index"),
@@ -88,9 +90,9 @@ class Progress(Base):
     progress_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("user.user_id", ondelete="CASCADE"), nullable=False)
     module_id = Column(Integer, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
-    status = Column(Enum(ProgressStatus), nullable=True)
+    status = Column(Enum(ProgressStatus), default=ProgressStatus.INPROGRESS)
     current_scenario_index = Column(Integer, nullable=True, default=0)
-    total_score = Column(Integer, nullable=True, default=0.0)
+    total_score = Column(Integer, nullable=True, default=0)
     last_saved = Column(DateTime, nullable=True, default=datetime)
 
     __table_args__ = (
@@ -102,4 +104,35 @@ class Progress(Base):
     module = relationship("TrainingModule", back_populates="progress_records")
     training_sessions = relationship("TrainingSession", back_populates="progress", cascade="all, delete-orphan")
 
-  
+
+
+
+
+class UserModule(Base):
+    __tablename__ = "user_modules"
+
+    # Composite primary key: user + module
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    module_id = Column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), primary_key=True)
+    
+    # Who assigned this module
+    assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # Timestamp of assignment
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Access level with Enum
+    access_level = Column(Enum(AccessLevel), default=AccessLevel.FULL, nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="assigned_modules", foreign_keys=[user_id])
+    module = relationship("Module", back_populates="assigned_users", foreign_keys=[module_id])
+    admin = relationship("User", foreign_keys=[assigned_by])
+
+    # Optional helper methods
+    def can_access(self):
+        return self.access_level in [AccessLevel.FULL, AccessLevel.READ_ONLY]
+
+    @property
+    def is_full_access(self):
+        return self.access_level == AccessLevel.FULL

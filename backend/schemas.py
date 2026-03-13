@@ -4,6 +4,10 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 import enum
 
 #enums
+class AccessLevel(enum.Enum):
+    FULL = "full"
+    READ_ONLY = "read-only"
+
 class Role(enum.Enum):
     ADMIN="ADMIN"
     USER="USER"
@@ -15,7 +19,8 @@ class ProgressStatus(enum.Enum):
 
 class SessionStatus(enum.Enum):
     COMPLETED="COMPLETED"
-    INCOMPLETED="INCOMPLETED"
+    NOT_STARTED = "NOT_STARTED"
+    INPROGRESS="INPROGRESS"
     FAILED="FAILED"
 
 #user schemas
@@ -109,7 +114,8 @@ class SessionCreate(BaseModel):
     progress_id: int
     scenario_id: int
     session_index: int
-    session_status: SessionStatus = SessionStatus.INCOMPLETED
+    session_token:str
+    session_status: SessionStatus = SessionStatus.INPROGRESS
     score: float | None = None
     total_duration: float | None = None
 
@@ -129,7 +135,8 @@ class SessionResponse(BaseModel):
     scenario_id: int
     start_time: datetime | None = None
     end_time: datetime | None = None
-    session_status: str | None = None
+    session_status: SessionStatus= SessionStatus.NOT_STARTED
+    session_token: str | None=None
     session_index: int
     score: float | None = None
     total_duration: float | None = None
