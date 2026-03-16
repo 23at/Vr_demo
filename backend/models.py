@@ -36,6 +36,8 @@ class TrainingModule(Base):
     module_name = Column(String(255), nullable=False, unique=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
+    version = Column(String, nullable=False, default="1.0.0")
+    cdn_url = Column(String, nullable=False)
 
     # Relationships
     scenarios = relationship("Scenario", back_populates="module", cascade="all, delete-orphan")
@@ -112,11 +114,11 @@ class UserModule(Base):
     __tablename__ = "user_modules"
 
     # Composite primary key: user + module
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    module_id = Column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.user_id", ondelete="CASCADE"), primary_key=True)
+    module_id = Column(Integer, ForeignKey("training_module.module_id", ondelete="CASCADE"), primary_key=True)
     
     # Who assigned this module
-    assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_by = Column(Integer, ForeignKey("user.user_id", ondelete="SET NULL"), nullable=True)
     
     # Timestamp of assignment
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
