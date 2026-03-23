@@ -21,7 +21,7 @@ class User(Base):
     role = Column(Enum(Role), nullable=False, default=Role.USER)
 
     # Relationships
-    assigned_modules = relationship("UserModule",back_populates="user",cascade="all, delete-orphan")
+    assigned_modules = relationship("UserModule",back_populates="user",cascade="all, delete-orphan", foreign_keys="UserModule.user_id")
     progress_records = relationship("Progress", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -32,7 +32,7 @@ class User(Base):
 class TrainingModule(Base):
     __tablename__ = "training_module"
 
-    module_id = Column(Integer, primary_key=True, autoincrement=True)
+    module_id = Column(String, primary_key=True)
     module_name = Column(String(255), nullable=False, unique=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
@@ -73,7 +73,7 @@ class Scenario(Base):
     __tablename__ = "scenario"
 
     scenario_id = Column(Integer, primary_key=True, autoincrement=True)
-    module_id = Column(Integer, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
+    module_id = Column(String, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
 
     __table_args__ = (
@@ -91,7 +91,7 @@ class Progress(Base):
 
     progress_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("user.user_id", ondelete="CASCADE"), nullable=False)
-    module_id = Column(Integer, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
+    module_id = Column(String, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
     status = Column(Enum(ProgressStatus), default=ProgressStatus.INPROGRESS)
     current_scenario_index = Column(Integer, nullable=True, default=0)
     total_score = Column(Integer, nullable=True, default=0)
@@ -115,7 +115,7 @@ class UserModule(Base):
 
     # Composite primary key: user + module
     user_id = Column(Integer, ForeignKey("user.user_id", ondelete="CASCADE"), primary_key=True)
-    module_id = Column(Integer, ForeignKey("training_module.module_id", ondelete="CASCADE"), primary_key=True)
+    module_id = Column(String, ForeignKey("training_module.module_id", ondelete="CASCADE"), primary_key=True)
     
     # Who assigned this module
     assigned_by = Column(Integer, ForeignKey("user.user_id", ondelete="SET NULL"), nullable=True)
@@ -128,8 +128,8 @@ class UserModule(Base):
 
     # Relationships
     user = relationship("User", back_populates="assigned_modules", foreign_keys=[user_id])
-    module = relationship("Module", back_populates="assigned_users", foreign_keys=[module_id])
-    admin = relationship("User", foreign_keys=[assigned_by])
+    module = relationship("TrainingModule", back_populates="assigned_users", foreign_keys=[module_id])
+    assigned_by_user = relationship("User", foreign_keys=[assigned_by])
 
     # Optional helper methods
     def can_access(self):

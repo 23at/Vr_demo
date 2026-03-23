@@ -49,8 +49,10 @@ class LoginRequest(BaseModel):
 
 #models schemas
 class ModuleCreate(BaseModel):
-    title: str
+    module_name: str
     description: str | None = None
+    version:str
+    cdn_url:str
     is_active: bool = True
 
 

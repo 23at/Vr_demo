@@ -3,8 +3,8 @@ from pydantic import BaseModel
 from ..auth.auth_handler import get_current_active_user
 from ..database import get_db
 from sqlalchemy.orm import Session
-from ..models import TrainingModule, UserModule, Progress, Scenario, TrainingSession
-from ..schemas import ProgressStatus, SessionStatus
+from ..models import TrainingModule, UserModule, Progress, Scenario, TrainingSession, Role
+from ..schemas import ProgressStatus, SessionStatus, ModuleCreate
 from uuid import uuid4
 router = APIRouter()
 
@@ -12,12 +12,31 @@ router = APIRouter()
 class LaunchRequest(BaseModel):
     module_id:int
 
+@router.post("/modules")
+def create_module(
+    module_data: ModuleCreate,
+    db: Session=Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    new_module=TrainingModule(
+        module_id=str(uuid4()),
+        module_name=module_data.module_name,
+        version=module_data.version,
+        cdn_url=module_data.cdn_url,
+    )
+    db.add(new_module)
+    db.commit()
+    db.refresh(new_module)
+    return new_module    
+
 @router.get("/modules")
 def get_modules(
     db: Session= Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
-    if current_user.role=="ADMIN":
+    if current_user.role == Role.ADMIN :
         modules=db.query(TrainingModule).all()
     else:
         modules = (
