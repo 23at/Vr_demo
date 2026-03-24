@@ -11,8 +11,8 @@ export default function Dashboard() {
   const [user, setUser] = useState("");
 
   useEffect(() => {
-  //loadModules(); disabled for UI testing//
- // loadUser();
+  loadModules();
+  loadUser();
   }, []);
 
   const loadModules = async () => {
@@ -33,12 +33,36 @@ export default function Dashboard() {
     }
   };
 
-  const launchVR = (module) => {
-    const sessionUrl = `https://your-vr-host.com/module/${module.id}`;
-    const encoded = encodeURIComponent(sessionUrl);
+const launchVR = async (module) => {
+  try {
+    // 1. Call backend to create session
 
-    window.location.href = `vrtraining://start?scene=${module.scene_name}`;
-  };
+    const res = await api.post("/launch-module", {
+   module_id: module.id,
+   });
+
+    const data = res.data;
+   
+
+    // 2. Extract session info
+    const sessionToken = data.session_token;
+    const scenarioId = data.scenario_id;
+
+    // 3. Launch VR launcher via custom protocol
+    const url = `vrlauncher://launch?module=${encodeURIComponent(
+      module.id
+    )}&session=${encodeURIComponent(sessionToken)}&scenario=${encodeURIComponent(
+      scenarioId
+    )}`;
+
+    window.location.href = url;
+  } catch (err) {
+    console.error("VR launch failed:", err);
+    alert("Failed to launch VR module");
+  }
+};
+
+  
 
   return (
     <div className="dashboard-page">
