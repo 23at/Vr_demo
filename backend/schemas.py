@@ -17,7 +17,7 @@ class ProgressStatus(enum.Enum):
     INCOMPLETED="INCOMPLETED"
     INPROGRESS="INPROGRESS"
 
-class SessionStatus(enum.Enum):
+class SessionStatus(str,enum.Enum):
     COMPLETED="COMPLETED"
     NOT_STARTED = "NOT_STARTED"
     INPROGRESS="INPROGRESS"

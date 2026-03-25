@@ -1,16 +1,18 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from ..auth.auth_handler import get_current_active_user
 from ..database import get_db
 from sqlalchemy.orm import Session
-from ..models import TrainingModule, UserModule, Progress, Scenario, TrainingSession, Role
+from ..models import TrainingModule,User, UserModule, Progress, Scenario, TrainingSession, Role
 from ..schemas import ProgressStatus, SessionStatus, ModuleCreate
 from uuid import uuid4
 router = APIRouter()
 
 #request
 class LaunchRequest(BaseModel):
-    module_id:int
+    module_id:str
 
 @router.post("/modules")
 def create_module(
@@ -69,6 +71,7 @@ def launch_module(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
+ 
     module = db.query(TrainingModule).filter(TrainingModule.module_id == request.module_id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
@@ -83,7 +86,9 @@ def launch_module(
         progress = Progress(
             user_id=current_user.user_id,
             module_id=request.module_id,
-            status=ProgressStatus.IN_PROGRESS
+            status=ProgressStatus.INPROGRESS,
+            current_scenario_index=0,
+            total_score=0,
         )
         db.add(progress)
         db.commit()
@@ -95,7 +100,11 @@ def launch_module(
         Scenario.scenario_index == progress.current_scenario_index
     ).first()
 
-
+    print("Request module_id:", request.module_id)
+    print("Module found:", module)
+    print("Progress:", progress)
+    print("Scenario found:", scenario)
+    print("Launch module request received:", request)
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")
 
@@ -114,7 +123,7 @@ def launch_module(
         scenario_id=scenario.scenario_id,
         session_index=session_index,
         session_token=session_token,
-        session_status=SessionStatus.IN_PROGRESS
+        session_status=SessionStatus.INPROGRESS
     )
 
     db.add(training_session)

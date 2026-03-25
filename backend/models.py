@@ -1,9 +1,10 @@
 # models.py
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum, UniqueConstraint, DateTime,Text, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from .schemas import Role, ProgressStatus, SessionStatus,AccessLevel
 Base = declarative_base()
 
@@ -75,9 +76,9 @@ class Scenario(Base):
     scenario_id = Column(Integer, primary_key=True, autoincrement=True)
     module_id = Column(String, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
-
+    scenario_index = Column(Integer, nullable=False)
     __table_args__ = (
-        UniqueConstraint("module_id", "name", name="uq_scenario_module_name"),
+        UniqueConstraint("module_id", "scenario_index", name="uq__module_scenario_index"),
     )
 
     # Relationships
@@ -94,8 +95,9 @@ class Progress(Base):
     module_id = Column(String, ForeignKey("training_module.module_id", ondelete="CASCADE"), nullable=False)
     status = Column(Enum(ProgressStatus), default=ProgressStatus.INPROGRESS)
     current_scenario_index = Column(Integer, nullable=True, default=0)
-    total_score = Column(Integer, nullable=True, default=0)
-    last_saved = Column(DateTime, nullable=True, default=datetime)
+    total_score = Column(Integer, default=0)
+    last_saved = Column(DateTime(timezone=True), server_default=func.now(),onupdate=func.now())
+
 
     __table_args__ = (
         UniqueConstraint("user_id", "module_id", name="uq_progress_user_module"),
