@@ -20,7 +20,7 @@ app.include_router(auth.router, prefix="/auth")
 
 app.include_router(users.router)
 app.include_router(mods.router)
-
+app.include_router(progress.router, tags=["progress"])
 
 @app.get("/")
 async def root():
