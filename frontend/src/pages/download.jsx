@@ -15,7 +15,7 @@ export default function Download() {
           <p>Install the VR Training Launcher to run modules.</p>
 
           <a
-            href="/launcher/VRTrainingLauncher.exe"
+            href="/launcher/VRTrainingLauncher.exe"//TODO: BUILD .EXE, ADD FOLDER
             className="primary-btn"
           >
             Download Launcher
