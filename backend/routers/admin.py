@@ -18,7 +18,10 @@ def require_admin(user):
 def get_users(db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     require_admin(current_user)
 
-    users = db.query(User).all()
+    users = db.query(User).filter(
+    User.role != Role.ADMIN,              # exclude admins
+    User.user_id != current_user.user_id  # exclude yourself
+    ).all()
 
     result = []
     for user in users:
