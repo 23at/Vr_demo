@@ -2,112 +2,82 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 
 export default function Dashboard() {
-/*const [modules, setModules] = useState([]);*activate when backend is ready*/
-  const [modules, setModules] = useState([
-  { id: 1, title: "Railcar Inspection", completed: false },
-  { id: 2, title: "Loading", completed: true },
-  { id: 3, title: "Post-Load", completed: true }
-]);
+  const [modules, setModules] = useState([]);
   const [user, setUser] = useState("");
 
   useEffect(() => {
-  loadModules();
-  loadUser();
+    loadModules();
+    loadUser();
   }, []);
 
   const loadModules = async () => {
     try {
       const res = await api.get("/modules");
       setModules(res.data);
-    } catch (err) {
-      alert("You must be logged in.");
+    } catch {
+      alert("Failed to load modules");
     }
   };
 
   const loadUser = async () => {
+    const res = await api.get("/users/me/");
+    setUser(res.data.username);
+  };
+
+  // LAUNCH
+  const launchVR = async (module) => {
     try {
-      const res = await api.get("/users/me/"); // backend endpoint that returns logged-in user
-      setUser(res.data.username);
+      const res = await api.post("/launch-module", {
+        module_id: module.module_id,
+      });
+
+      const data = res.data;
+
+      const token = localStorage.getItem("access_token");
+      const url = `vrlauncher://launch?module=${encodeURIComponent(
+        module.module_id
+      )}&session=${encodeURIComponent(
+        data.session_token
+      )}&scenario=${encodeURIComponent(
+        data.scenario_id
+      )}&token=${encodeURIComponent(token)}`;
+
+      window.location.href = url;
     } catch (err) {
-      console.error("Could not load user");
+      console.error(err);
+      alert("Failed to launch module");
     }
   };
 
-const launchVR = async (module) => {
-  try {
-    // 1. Call backend to create session
-
-    const res = await api.post("/launch-module", {
-   module_id: module.id,
-   });
-
-    const data = res.data;
-   
-
-    // 2. Extract session info
-    const sessionToken = data.session_token;
-    const scenarioId = data.scenario_id;
-
-    // 3. Launch VR launcher via custom protocol
-    const url = `vrlauncher://launch?module=${encodeURIComponent(
-      module.id
-    )}&session=${encodeURIComponent(sessionToken)}&scenario=${encodeURIComponent(
-      scenarioId
-    )}`;
-
-    window.location.href = url;
-  } catch (err) {
-    console.error("VR launch failed:", err);
-    alert("Failed to launch VR module");
-  }
-};
-
-  
-
   return (
-    <div className="dashboard-page">
-
-      {/* Header */}
-      <div className="dashboard-header">
-        <div className="home-icon">🏠</div>
-        <h1 className="dashboard-title">VTRAIN</h1>
-        <div className="user-id">User: {user}</div>
+    <div className="app-layout">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2 className="sidebar-title">V-TRAIN</h2>
+        <a className="sidebar-link" href="/dashboard">Dashboard</a>
+        <a className="sidebar-link" href="/download-launcher">Download Launcher</a>
       </div>
 
-      {/* Module List */}
-      <div className="module-list">
-        {modules.map((mod) => (
-          <div key={mod.id} className="module-row">
+      {/* Main */}
+      <div className="main-content">
+        <h1>Welcome, {user}</h1>
 
-            {/* WebXR Launch Link */}
-            <div
-              className="module-link"
+        {modules.length === 0 && <p>No modules assigned</p>}
+
+        {modules.map((mod) => (
+          <div key={mod.module_id} className="card">
+            <h3>{mod.module_name}</h3>
+            <p>Version: {mod.version}</p>
+
+            <button
+              className="primary-btn"
               onClick={() => launchVR(mod)}
             >
-              VR Training #{mod.id}
-            </div>
-
-            {/* Module Name */}
-            <div className="module-name">
-              {mod.title}
-            </div>
-
-            {/* Completion Status */}
-            <div
-              className={
-                mod.completed
-                  ? "status complete"
-                  : "status incomplete"
-              }
-            >
-              {mod.completed ? "Complete" : "Incomplete"}
-            </div>
-
+              Launch Training
+            </button>
           </div>
         ))}
       </div>
-      
     </div>
-    
   );
 }
