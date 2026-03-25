@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   const loadUser = async () => {
     try {
-      const res = await api.get("/me"); // backend endpoint that returns logged-in user
+      const res = await api.get("/users/me/"); // backend endpoint that returns logged-in user
       setUser(res.data.username);
     } catch (err) {
       console.error("Could not load user");
@@ -106,7 +106,8 @@ const launchVR = async (module) => {
           </div>
         ))}
       </div>
-
+      
     </div>
+    
   );
 }

@@ -22,7 +22,14 @@ export default function Login() {
       });
       const token = response.data.access_token;
       localStorage.setItem("access_token", token)
-      navigate("/dashboard");
+      const userRes = await api.get("/users/me/");
+      const role = userRes.data.role;
+
+      if (role === "ADMIN") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.error("login failed:", err)
       alert("Invalid credentials");
