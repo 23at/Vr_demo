@@ -121,3 +121,60 @@ body {
 .status.incomplete {
   color: red;
 }
+
+.app-layout {
+  display: flex;
+  flex-direction: row-reverse;
+  height: 100vh;
+  background-color: #f4f6f8;
+}
+
+.sidebar {
+  width: 240px;
+  background-color: #1e2a38;
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-title {
+  margin-bottom: 30px;
+}
+
+.sidebar-link {
+  color: white;
+  text-decoration: none;
+  margin-bottom: 15px;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.primary-btn {
+  background-color: #2a7ae4;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown {
+  margin-top: 10px;
+  padding: 6px;
+}
+
+.status-text {
+  color: gray;
+}
