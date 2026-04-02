@@ -7,3 +7,4 @@ psycopg2-binary
 python-jose
 python-dotenv
 python-multipart
+boto3 
