@@ -31,19 +31,33 @@ s3 = boto3.client(
     aws_secret_access_key=os.environ["R2_SECRET"],
 )
 BUCKET_NAME = "vr-modules"
+
+@router.get("/modules/{module_id}/signed-url")
+def get_signed_url(module_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+    module = db.query(TrainingModule).filter(TrainingModule.module_id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    # Generate signed URL valid for 10 minutes
+    url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": BUCKET_NAME, "Key": module.r2_key},
+        ExpiresIn=600  # seconds
+    )
+
+    return {"signed_url": url, "version": module.version, "checksum": module.cdn_checksum}
+
 @router.post("/modules")
 def create_module(
     module_data: ModuleCreate,
-    db: Session=Depends(get_db),
-    current_user=Depends(get_current_active_user)
+    db: Session=Depends(get_db)
 ):
-    if current_user.role != Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Not authorized")
+
     new_module=TrainingModule(
         module_id=str(uuid4()),
         module_name=module_data.module_name,
         version=module_data.version,
-        cdn_url=module_data.cdn_url,
+        r2_key=module_data.r2_key,
     )
     db.add(new_module)
     db.commit()
@@ -160,47 +174,3 @@ def launch_module(
         "session_token": session_token
     }
 
-
-@router.post("/modules/{module_id}/upload")
-async def upload_module_file(
-    module_id: int,
-    version: str = Form(...),
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_active_user)
-):
-    if current_user.role != Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    module = db.query(TrainingModule).filter(TrainingModule.module_id == module_id).first()
-
-    if not module:
-        raise HTTPException(status_code=404, detail="Module not found")
-
-
-    hasher = hashlib.sha256()
-
-    while chunk := file.file.read(1024 * 1024):
-        hasher.update(chunk)
-
-    checksum = hasher.hexdigest()
-
-    file.file.seek(0)
-
-    # R2 key   
-    r2_key = f"{module_id}/{version}/{file.filename}"
-
-    s3.upload_fileobj(file.file, BUCKET_NAME, r2_key)
-
-
-    # UPDATE module
-    module.version = version
-    module.r2_key = r2_key
-    module.cdn_checksum = checksum
-
-    db.commit()
-
-    return {
-        "success": True,
-        "module_id": module_id,
-        "version": version
-    }

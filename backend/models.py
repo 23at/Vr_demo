@@ -38,7 +38,7 @@ class TrainingModule(Base):
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     version = Column(String, nullable=False, default="1.0.0")
-    cdn_url = Column(String, nullable=False)
+    r2_key = Column(String, nullable=False)
 
     # Relationships
     scenarios = relationship("Scenario", back_populates="module", cascade="all, delete-orphan")
