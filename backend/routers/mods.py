@@ -1,9 +1,8 @@
 from datetime import datetime
 import hashlib
+from botocore.client import Config
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile,Form
-from fastapi import security
-from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from ..auth.auth_handler import get_current_active_user
 from ..database import get_db
@@ -21,19 +20,66 @@ router = APIRouter()
 class LaunchRequest(BaseModel):
     module_id:str
 
+R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")  
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
 
 # Cloudflare R2 client
 s3 = boto3.client(
     "s3",
-    region_name="auto",
-    endpoint_url="https://<account-id>.r2.cloudflarestorage.com",
-    aws_access_key_id=os.environ["R2_KEY"],
-    aws_secret_access_key=os.environ["R2_SECRET"],
+   endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+    aws_access_key_id=R2_ACCESS_KEY_ID,
+    aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+    config=Config(signature_version="s3v4")
 )
-BUCKET_NAME = "vr-modules"
+BUCKET_NAME = "training-modules"
+
+
+@router.post("/modules/{module_id}/upload")
+async def upload_module_file(
+    module_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    # Only admins allowed
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Fetch the module
+    module = db.query(TrainingModule).filter(TrainingModule.module_id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    # Compute SHA-256 checksum while reading the file
+    hasher = hashlib.sha256()
+    while chunk := file.file.read(1024 * 1024):  # read in 1MB chunks
+        hasher.update(chunk)
+    checksum = hasher.hexdigest()
+    file.file.seek(0)  # reset pointer before uploading
+
+    # Build R2 key (path inside the bucket)
+    r2_key = f"{file.filename}"
+
+    # Upload to R2 directly from memory/stream
+    s3.upload_fileobj(file.file, BUCKET_NAME, r2_key)
+
+    # Update module metadata in DB
+    module.r2_key = r2_key
+    module.cdn_checksum = checksum
+
+    db.commit()
+
+    return {
+        "success": True,
+        "module_id": module_id,
+        "r2_key": r2_key,
+        "cdn_checksum": checksum
+    }
+
 
 @router.get("/modules/{module_id}/signed-url")
-def get_signed_url(module_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+def get_signed_url(module_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     module = db.query(TrainingModule).filter(TrainingModule.module_id == module_id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
@@ -50,14 +96,27 @@ def get_signed_url(module_id: int, db: Session = Depends(get_db), current_user=D
 @router.post("/modules")
 def create_module(
     module_data: ModuleCreate,
-    db: Session=Depends(get_db)
+    db: Session=Depends(get_db),
+    current_user = Depends(get_current_active_user)
 ):
+     # Only admins allowed
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = db.query(TrainingModule).filter(
+        TrainingModule.module_name == module_data.module_name
+    ).first()
 
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Module with this name already exists"
+        )
     new_module=TrainingModule(
         module_id=str(uuid4()),
         module_name=module_data.module_name,
         version=module_data.version,
-        r2_key=module_data.r2_key,
+        description=module_data.description,
     )
     db.add(new_module)
     db.commit()

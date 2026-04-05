@@ -52,7 +52,6 @@ class ModuleCreate(BaseModel):
     module_name: str
     description: str | None = None
     version:str
-    cdn_url:str
     is_active: bool = True
 
 
