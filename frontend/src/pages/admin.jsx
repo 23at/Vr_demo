@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState({});
+  const navigate = useNavigate();
   const [selectedFileModule, setSelectedFileModule] = useState(""); 
   const [file, setFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  
   
   // NEW: create module state
   const [newModule, setNewModule] = useState({
@@ -20,6 +23,11 @@ export default function Admin() {
     loadUsers();
     loadModules();
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    navigate("/");
+  };
 
   const loadUsers = async () => {
     const res = await api.get("/admin/users");
@@ -93,9 +101,21 @@ export default function Admin() {
   return (
     <div className="app-layout">
 
-      {/* Main */}
-      <div className="main-content">
-        <h1>Admin Dashboard</h1>
+  <div className="sidebar">
+    <h2 className="sidebar-title">V-TRAIN</h2>
+    <a className="sidebar-link" href="/admin">Admin Dashboard</a>
+    <a className="sidebar-link" href="/admin/users">User Management</a>
+    <a className="sidebar-link" href="/download-launcher">Download Launcher</a>
+    <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+  </div>
+
+    <div className="main-content">
+        
+        <h1>Admin Dashboard </h1>
+        
+        
          {/* CREATE MODULE */}
         <div className="card">
           <h3>Create Module</h3>
@@ -127,6 +147,7 @@ export default function Admin() {
             Create Module
           </button>
         </div>
+
 
         {/* File Upload Section */}
         <div className="card">
@@ -194,7 +215,10 @@ export default function Admin() {
             </button>
           </div>
         ))}
+        
       </div>
+      
     </div>
+    
   );
 }

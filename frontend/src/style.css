@@ -75,6 +75,16 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.logout-btn {
+  background-color: #2a7ae4;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+
+}
+
 .dashboard-title {
   margin: 0;
 }
@@ -125,7 +135,7 @@ body {
 .app-layout {
   display: flex;
   flex-direction: row-reverse;
-  height: 100vh;
+  min-height: 100vh;
   background-color: #f4f6f8;
 }
 
@@ -177,4 +187,14 @@ body {
 
 .status-text {
   color: gray;
+}
+
+.card input,
+.card select {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
