@@ -63,12 +63,9 @@ export default function Login() {
           </button>
         </form>
 
-        <button
-          className="create-button"
-          onClick={() => navigate("/register")}
-        >
-          Create Account
-        </button>
+       <p style={{ marginTop: "15px", fontSize: "14px", color: "#666" }}>
+  Need access? Contact your administrator.
+</p>
       </div>
     </div>
   );

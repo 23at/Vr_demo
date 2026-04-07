@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [modules, setModules] = useState([]);
   const [user, setUser] = useState("");
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    navigate("/");
+  };
 
   useEffect(() => {
     loadModules();
@@ -68,7 +76,11 @@ const launchVR = async (module) => {
         <h2 className="sidebar-title">V-TRAIN</h2>
         <a className="sidebar-link" href="/dashboard">Dashboard</a>
         <a className="sidebar-link" href="/download-launcher">Download Launcher</a>
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
       </div>
+
 
       {/* Main */}
       <div className="main-content">
