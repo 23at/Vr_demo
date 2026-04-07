@@ -9,6 +9,7 @@ from ..database import get_db
 from ..schemas import Token, UserCreate, UserResponse
 from ..models import User
 
+
 router = APIRouter()
 
 
