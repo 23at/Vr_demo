@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User, UserModule, TrainingModule, Role
+from ..schemas import UserResponse
 from ..auth.auth_handler import get_current_active_user
 from ..auth.auth_handler import get_password_hash
 
@@ -104,6 +105,9 @@ def update_user(
     db.commit()
 
     return {"message": "User updated"}
+
+
+
 
 
 @router.delete("/users/{user_id}")
