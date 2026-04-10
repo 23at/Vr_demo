@@ -34,7 +34,8 @@ s3 = boto3.client(
 )
 BUCKET_NAME = "training-modules"
 
-
+CHUNK_SIZE= 10 *1024 * 1024
+MULTIPART_THRESHOLD=50 * 1024*1024
 @router.post("/modules/{module_id}/upload")
 async def upload_module_file(
     module_id: str,
@@ -51,23 +52,78 @@ async def upload_module_file(
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
 
-    # Compute SHA-256 checksum while reading the file
-    hasher = hashlib.sha256()
-    while chunk := file.file.read(1024 * 1024):  # read in 1MB chunks
-        hasher.update(chunk)
-    checksum = hasher.hexdigest()
-    file.file.seek(0)  # reset pointer before uploading
 
-    # Build R2 key (path inside the bucket)
     r2_key = f"{file.filename}"
+    hasher = hashlib.sha256()
+    upload_id = None
 
-    # Upload to R2 directly from memory/stream
-    s3.upload_fileobj(file.file, BUCKET_NAME, r2_key)
+    try:
+        first_chunk= await file.read(CHUNK_SIZE)
+        if not first_chunk:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+        hasher.update(first_chunk)
+        next_chunk = await file.read(CHUNK_SIZE)
 
-    # Update module metadata in DB
+        if not next_chunk:
+            #Entire file fit in the first read
+            s3.put_object(Bucket=BUCKET_NAME, Key=r2_key, Body=first_chunk)
+            checksum=hasher.hexdigest()
+        else:
+            #large file multipart upload
+            mpu =s3.create_multipart_upload(Bucket=BUCKET_NAME, Key=r2_key)
+            upload_id=mpu["UploadId"]
+            parts=[]
+            part_number =1
+
+            for chunk in (first_chunk, next_chunk):
+                hasher.update(next_chunk if chunk is next_chunk else b"")
+                resp = s3.upload_part(
+                    Bucket=BUCKET_NAME,
+                    Key=r2_key,
+                    UploadId=upload_id,
+                    PartNumber=part_number,
+                    Body=chunk,
+                )
+                parts.append({"PartNumber": part_number, "ETag": resp["ETag"]})
+                part_number += 1
+
+            #stream remainder
+            while True:
+                chunk=await file.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+                resp=s3.upload_part(
+                    Bucket=BUCKET_NAME,
+                    Key=r2_key,
+                    UploadId=upload_id,
+                    PartNumber=part_number,
+                    Body=chunk,
+                )
+                parts.append({"PartNumber": part_number, "ETag": resp["ETag"]})
+                part_number += 1
+            
+            #finalize the mulitpart upload
+            s3.complete_multipart_upload(
+                Bucket=BUCKET_NAME,
+                Key=r2_key,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": parts},
+            )
+            upload_id=None
+            checksum=hasher.hexdigest()
+    except Exception as exc:
+        if upload_id:
+            try:
+                s3.abort_multipart_upload(
+                    Bucket=BUCKET_NAME, Key=r2_key, UploadId=upload_id
+                )
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=f"Upload failed: {exc}") from exc
+    
     module.r2_key = r2_key
     module.cdn_checksum = checksum
-
     db.commit()
 
     return {

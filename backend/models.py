@@ -38,8 +38,8 @@ class TrainingModule(Base):
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     version = Column(String, nullable=False, default="1.0.0")
-    r2_key = Column(String, nullable=False)
-    cdn_checksum=Column(String, nullable=False)
+    r2_key = Column(String, nullable=True)
+    cdn_checksum=Column(String, nullable=True)
 
     # Relationships
     scenarios = relationship("Scenario", back_populates="module", cascade="all, delete-orphan")
