@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import User, UserModule, TrainingModule, Role
-from ..schemas import UserResponse
+from ..models import User, UserModule, Role
+from ..schemas import UserUpdate
 from ..auth.auth_handler import get_current_active_user
 from ..auth.auth_handler import get_password_hash
 
@@ -76,31 +76,26 @@ def assign_module(
 @router.put("/users/{user_id}")
 def update_user(
     user_id: int,
-    username: str = None,
-    email: str = None,
-    password: str = None,
-    role: str = None,
+    data: UserUpdate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
     require_admin(current_user)
 
     user = db.query(User).filter(User.user_id == user_id).first()
-
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if data.username:
+        user.username=data.username
+    if data.email:
+        user.email = data.email
 
-    if username:
-        user.username = username
+    if data.name:
+        user.username = data.name
 
-    if email:
-        user.email = email
+    if data.password:
+        user.password_hash = get_password_hash(data.password)
 
-    if password:
-        user.password_hash = get_password_hash(password)
-
-    if role:
-        user.role = role
 
     db.commit()
 

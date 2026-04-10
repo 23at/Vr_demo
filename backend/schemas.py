@@ -33,6 +33,7 @@ class UserCreate(BaseModel):
     role: Role= Role.USER
     
 class UserUpdate(BaseModel):
+    username: Optional[str]=None
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     password: Optional[str] = None

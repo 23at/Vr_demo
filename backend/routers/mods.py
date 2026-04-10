@@ -225,12 +225,22 @@ def launch_module(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
- 
-    module = db.query(TrainingModule).filter(TrainingModule.module_id == request.module_id).first()
+    # Verify module exists
+    module = db.query(TrainingModule).filter(
+        TrainingModule.module_id == request.module_id
+    ).first()
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
-    
-    # find progress
+
+    # Verify user is assigned to this module
+    assignment = db.query(UserModule).filter(
+        UserModule.user_id == current_user.user_id,
+        UserModule.module_id == request.module_id
+    ).first()
+    if not assignment or not assignment.can_access():
+        raise HTTPException(status_code=403, detail="Access to this module is not permitted")
+
+    # Get or create progress
     progress = db.query(Progress).filter(
         Progress.user_id == current_user.user_id,
         Progress.module_id == request.module_id
@@ -245,33 +255,39 @@ def launch_module(
             total_score=0,
         )
         db.add(progress)
-        db.commit()
-        db.refresh(progress)
+        db.flush()  # get progress_id without full commit
 
-     #determine scenario
+    # Guard: don't launch if already completed
+    if progress.status == ProgressStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Module already completed")
+
+    # Determine current scenario
     scenario = db.query(Scenario).filter(
         Scenario.module_id == request.module_id,
         Scenario.scenario_index == progress.current_scenario_index
     ).first()
-
-    print("Request module_id:", request.module_id)
-    print("Module found:", module)
-    print("Progress:", progress)
-    print("Scenario found:", scenario)
-    print("Launch module request received:", request)
     if not scenario:
-        raise HTTPException(status_code=404, detail="Scenario not found")
+        raise HTTPException(status_code=404, detail="No scenario found for current progress index")
 
-    #find next session index
+    stale_session = db.query(TrainingSession).filter(
+        TrainingSession.progress_id == progress.progress_id,
+        TrainingSession.scenario_id == scenario.scenario_id,
+        TrainingSession.session_status == SessionStatus.INPROGRESS
+    ).first()
+    if stale_session:
+        stale_session.session_status = SessionStatus.CANCELLED
+        db.flush()
+        
+    # Determine next session index for this scenario
     last_session = db.query(TrainingSession).filter(
-    TrainingSession.progress_id == progress.progress_id,
-    TrainingSession.scenario_id == scenario.scenario_id
-).order_by(TrainingSession.session_index.desc()).first()
-    
-    session_index = 0 if not last_session else last_session.session_index + 1
-    # create session token
-    session_token = str(uuid4())
+        TrainingSession.progress_id == progress.progress_id,
+        TrainingSession.scenario_id == scenario.scenario_id
+    ).order_by(TrainingSession.session_index.desc()).first()
 
+    session_index = 0 if not last_session else last_session.session_index + 1
+
+    # Create session
+    session_token = str(uuid4())
     training_session = TrainingSession(
         progress_id=progress.progress_id,
         scenario_id=scenario.scenario_id,
@@ -279,7 +295,6 @@ def launch_module(
         session_token=session_token,
         session_status=SessionStatus.INPROGRESS
     )
-
     db.add(training_session)
     db.commit()
 
@@ -288,4 +303,3 @@ def launch_module(
         "scenario_id": scenario.scenario_id,
         "session_token": session_token
     }
-

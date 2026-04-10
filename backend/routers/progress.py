@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 class ProgressRequest(BaseModel):
-    scenario_id: str
+    scenario_id: int
     scenario_index: int
     status: str
     score_delta: int = 0
@@ -39,14 +39,14 @@ async def update_progress(
 
     # 2. Validate scenario 
     scenario = db.query(Scenario).filter(
-    Scenario.id == data.scenario_id,
+    Scenario.scenario_id == data.scenario_id,
     Scenario.module_id == progress.module_id).first()
 
     if not scenario:
         raise HTTPException(status_code=400, detail="Invalid scenario")
 
     # 3. Validate order
-    if data.scenario_index != session.current_scenario_index:
+    if data.scenario_index != progress.current_scenario_index:
         raise HTTPException(status_code=400, detail="Invalid scenario order")
 
     
@@ -57,14 +57,18 @@ async def update_progress(
 
     elif data.status == "failed":
     # stay on same scenario 
-        progress.attempt_number+=1
         pass
+
+    db.add(progress)
+    db.commit()
+    db.refresh(progress)
 
     # 5. Get next scenario
     next_scenario = get_next_scenario(db, progress.module_id, progress.current_scenario_index)
 
     # 6. Calculate progress
-    progress = calculate_progress(db, progress.module_id, progress.current_scenario_index)
+    total_score=progress.total_score
+    progress_pct = calculate_progress(db, progress.module_id, progress.current_scenario_index)
 
     return {
         "next_scenario": {
@@ -72,8 +76,8 @@ async def update_progress(
             "name": next_scenario.name,
             "index": next_scenario.scenario_index
         } if next_scenario else None,
-        "progress": progress,
-        "total_score": progress.total_score,
+        "progress": progress_pct,
+        "total_score":total_score,
         "completed": next_scenario is None
     }
 
