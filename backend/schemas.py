@@ -82,6 +82,7 @@ class ScenarioCreate(BaseModel):
 
 class ScenarioUpdate(BaseModel):
     name: str | None = None
+    scenario_index: int
 
 
 class ScenarioResponse(BaseModel):

@@ -8,7 +8,7 @@ from ..auth.auth_handler import get_current_active_user
 from ..database import get_db
 from sqlalchemy.orm import Session
 from ..models import TrainingModule,User, UserModule, Progress, Scenario, TrainingSession, Role
-from ..schemas import ProgressStatus, SessionStatus, ModuleCreate
+from ..schemas import ProgressStatus, SessionStatus, ModuleCreate, ScenarioCreate,ScenarioUpdate
 from uuid import uuid4
 import boto3
 import os
@@ -303,3 +303,87 @@ def launch_module(
         "scenario_id": scenario.scenario_id,
         "session_token": session_token
     }
+
+@router.post("/modules/{module_id}/scenarios")
+def create_scenario(
+    module_id: int,
+    scenario: ScenarioCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if module exists
+    module = db.query(TrainingModule).filter(TrainingModule.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+
+    # Create scenario
+    new_scenario = Scenario(
+        title=scenario.title,
+        module_id=module_id
+        current_user=Depends(get_current_active_user)
+    )
+
+    db.add(new_scenario)
+    db.commit()
+    db.refresh(new_scenario)
+
+    return new_scenario
+
+@router.get("/modules/{module_id}/scenarios")
+def get_scenarios_by_module(
+    module_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    scenarios = db.query(Scenario).filter(Scenario.module_id == module_id).all()
+    return scenarios
+
+@router.put("/scenarios/{scenario_id}")
+def update_scenario(
+    scenario_id: int,
+    updated_data: ScenarioUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
+
+    if not scenario:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+
+    scenario.name = updated_data.name
+    scenario.scenario_index = updated_data.scenario_index
+
+    db.commit()
+    db.refresh(scenario)
+
+    return scenario
+
+@router.delete("/scenarios/{scenario_id}")
+def delete_scenario(
+    scenario_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
+
+    if not scenario:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+
+    db.delete(scenario)
+    db.commit()
+
+    return {"message": "Scenario deleted successfully"}
