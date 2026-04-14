@@ -323,9 +323,9 @@ def create_scenario(
 
     # Create scenario
     new_scenario = Scenario(
-        title=scenario.title,
-        module_id=module_id
-        current_user=Depends(get_current_active_user)
+        name=scenario.name,
+        module_id=module_id,
+        scenario_index=scenario.index
     )
 
     db.add(new_scenario)

@@ -78,6 +78,8 @@ class ModuleResponse(BaseModel):
 class ScenarioCreate(BaseModel):
     name: str
     module_id: int
+    scenario_index: int
+
 
 
 class ScenarioUpdate(BaseModel):
