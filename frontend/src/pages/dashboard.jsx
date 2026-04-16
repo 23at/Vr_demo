@@ -93,6 +93,13 @@ const launchVR = async (module) => {
             <h3>{mod.module_name}</h3>
             <p>Version: {mod.version}</p>
 
+            <p>
+              Status:{" "}
+              <span className={mod.status === "COMPLETED" ? "status complete" : "status incomplete"}>
+                {mod.status === "COMPLETED" ? "Complete" : "Incomplete"}
+              </span>
+            </p>
+
             <button
               className="primary-btn"
               onClick={() => launchVR(mod)}
