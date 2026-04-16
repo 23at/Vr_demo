@@ -4,9 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import Depends, HTTPException, status, APIRouter
 from sqlalchemy.orm import Session
 
-from ..auth.auth_handler import authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_user, get_password_hash
+from ..auth.auth_handler import authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_user, get_password_hash, get_current_active_user
 from ..database import get_db
-from ..schemas import Token, UserCreate, UserResponse
+from ..schemas import Token, UserCreate, UserResponse, Role
 from ..models import User
 
 
@@ -14,7 +14,10 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=UserResponse)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
+def register_user(user: UserCreate, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Admin only")
+
     db_user = get_user(db, user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered.")

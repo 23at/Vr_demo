@@ -202,7 +202,8 @@ def get_module(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
     module = db.query(TrainingModule).filter(TrainingModule.module_id == module_id).first()
 
     if not module:
@@ -269,11 +270,13 @@ def launch_module(
     if not scenario:
         raise HTTPException(status_code=404, detail="No scenario found for current progress index")
 
+    
     stale_session = db.query(TrainingSession).filter(
         TrainingSession.progress_id == progress.progress_id,
         TrainingSession.scenario_id == scenario.scenario_id,
         TrainingSession.session_status == SessionStatus.INPROGRESS
     ).first()
+ 
     if stale_session:
         stale_session.session_status = SessionStatus.CANCELLED
         db.flush()
@@ -316,7 +319,7 @@ def create_scenario(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Check if module exists
-    module = db.query(TrainingModule).filter(TrainingModule.id == module_id).first()
+    module = db.query(TrainingModule).filter(TrainingModule.module_id == module_id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
 
@@ -356,7 +359,7 @@ def update_scenario(
     if current_user.role != Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
 
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")
@@ -378,7 +381,7 @@ def delete_scenario(
     if current_user.role != Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
+    scenario = db.query(Scenario).filter(Scenario.scenario_id == scenario_id).first()
 
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")

@@ -45,7 +45,7 @@ class UserResponse(BaseModel):
     email: EmailStr | None = None
     first_name:str|None=None
     last_name:str |None=None
-    role: Role | None=None
+    role:Role = Role.USER
 
 class UserInDB(UserResponse):
     hashed_password: str

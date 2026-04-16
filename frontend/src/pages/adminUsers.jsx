@@ -32,7 +32,7 @@ export default function AdminUsers() {
   };
 
   const createUser = async () => {
-    await api.post("/admin/users", newUser);
+    await api.post("/auth/register", newUser);
     setNewUser({ username: "", email: "", password: "", role: "USER" });
     loadUsers();
   };
