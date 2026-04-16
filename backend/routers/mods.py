@@ -1,5 +1,7 @@
 from datetime import datetime
 import hashlib
+from sys import modules
+from unittest import result
 from botocore.client import Config
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
@@ -194,7 +196,27 @@ def get_modules(
         .all()
     )
 
-    return modules
+    result = []
+
+    for m in modules:
+        progress = db.query(Progress).filter(
+        Progress.user_id == current_user.user_id,
+        Progress.module_id == m.module_id
+    ).first()
+
+    if progress and progress.status == ProgressStatus.COMPLETED:
+        status = "COMPLETED"
+    else:
+        status = "INCOMPLETE"
+
+    result.append({
+        "module_id": m.module_id,
+        "module_name": m.module_name,
+        "version": m.version,
+        "status": status
+    })
+
+    return result
 
 @router.get("/modules/{module_id}")
 def get_module(
