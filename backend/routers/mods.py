@@ -329,9 +329,10 @@ def launch_module(
         "session_token": session_token
     }
 
+#FIX: module_id corrected from int to str to match TrainingModule model
 @router.post("/modules/{module_id}/scenarios")
 def create_scenario(
-    module_id: int,
+    module_id: str,
     scenario: ScenarioCreate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
@@ -345,7 +346,17 @@ def create_scenario(
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
 
-
+    # Check for duplicate scenario_index within this module
+    existing_index = db.query(Scenario).filter(
+        Scenario.module_id == module_id,
+        Scenario.scenario_index == scenario.scenario_index
+    ).first()
+    if existing_index:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scenario index {scenario.scenario_index} already exists in this module"
+        )
+    
     # Create scenario
     new_scenario = Scenario(
         name=scenario.name,
@@ -359,9 +370,10 @@ def create_scenario(
 
     return new_scenario
 
+#FIX: module_id corrected from int to str to match TrainingModule model
 @router.get("/modules/{module_id}/scenarios")
 def get_scenarios_by_module(
-    module_id: int,
+    module_id: str,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
@@ -386,12 +398,26 @@ def update_scenario(
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")
 
-    scenario.name = updated_data.name
-    scenario.scenario_index = updated_data.scenario_index
-
+    # Check for duplicate index among other scenarios in the same module
+    if updated_data.scenario_index is not None:
+        duplicate = db.query(Scenario).filter(
+            Scenario.module_id == scenario.module_id,
+            Scenario.scenario_index == updated_data.scenario_index,
+            Scenario.scenario_id != scenario_id
+        ).first()
+        if duplicate:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Scenario index {updated_data.scenario_index} already exists in this module"
+            )
+        scenario.scenario_index = updated_data.scenario_index
+ 
+    if updated_data.name is not None:
+        scenario.name = updated_data.name
+ 
     db.commit()
     db.refresh(scenario)
-
+ 
     return scenario
 
 @router.delete("/scenarios/{scenario_id}")

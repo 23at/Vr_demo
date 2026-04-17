@@ -105,6 +105,7 @@ export default function Admin() {
     <h2 className="sidebar-title">V-TRAIN</h2>
     <a className="sidebar-link" href="/admin">Admin Dashboard</a>
     <a className="sidebar-link" href="/admin/users">User Management</a>
+    <a className="sidebar-link" href="/admin/modules">Module Management</a>
     <a className="sidebar-link" href="/download-launcher">Download Launcher</a>
     <button className="logout-btn" onClick={handleLogout}>
           Logout

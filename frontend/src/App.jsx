@@ -4,6 +4,7 @@ import Dashboard from "./pages/dashboard";
 import Admin from "./pages/admin";
 import Download from "./pages/download";
 import AdminUsers from "./pages/adminUsers";
+import AdminModules from "./pages/adminModules";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/admin" element={<Admin />} />
         <Route path="/download-launcher" element={<Download />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/modules" element={<AdminModules />} />
       </Routes>
     </BrowserRouter>
   );
