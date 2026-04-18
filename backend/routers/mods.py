@@ -78,7 +78,7 @@ async def upload_module_file(
             part_number =1
 
             for chunk in (first_chunk, next_chunk):
-                hasher.update(next_chunk if chunk is next_chunk else b"")
+                hasher.update(chunk)
                 resp = s3.upload_part(
                     Bucket=BUCKET_NAME,
                     Key=r2_key,
@@ -300,7 +300,7 @@ def launch_module(
     ).first()
  
     if stale_session:
-        stale_session.session_status = SessionStatus.CANCELLED
+        stale_session.session_status = SessionStatus.FAILED
         db.flush()
         
     # Determine next session index for this scenario
@@ -361,7 +361,7 @@ def create_scenario(
     new_scenario = Scenario(
         name=scenario.name,
         module_id=module_id,
-        scenario_index=scenario.index
+        scenario_index=scenario.scenario_index
     )
 
     db.add(new_scenario)
