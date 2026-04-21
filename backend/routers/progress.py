@@ -10,7 +10,6 @@ router = APIRouter()
 
 
 class ProgressRequest(BaseModel):
-    scenario_id: int
     scenario_index: int
     status: str
     score_delta: int = 0
@@ -39,7 +38,7 @@ async def update_progress(
 
     # 2. Validate scenario 
     scenario = db.query(Scenario).filter(
-    Scenario.scenario_id == data.scenario_id,
+    Scenario.scenario_index == data.scenario_index,
     Scenario.module_id == progress.module_id).first()
 
     if not scenario:
