@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException
 from pydantic import BaseModel
 from ..models import TrainingSession, Progress, Scenario
+from ..schemas import ProgressStatus
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..auth.auth_handler import get_current_active_user
@@ -8,6 +9,27 @@ from ..auth.auth_handler import get_current_active_user
 
 router = APIRouter()
 
+def get_session(db, session_token: str):
+    return db.query(TrainingSession).filter(
+        TrainingSession.session_token == session_token
+    ).first()
+
+def get_next_scenario(db, module_id: str, next_index: int):
+    return db.query(Scenario).filter(
+        Scenario.module_id == module_id,
+        Scenario.scenario_index == next_index
+    ).first()
+
+
+def calculate_progress(db, module_id: str, current_index: int):
+    total = db.query(Scenario).filter(
+        Scenario.module_id == module_id
+    ).count()
+
+    if total == 0:
+        return 0
+
+    return round((current_index / total) * 100)
 
 class ProgressRequest(BaseModel):
     scenario_index: int
@@ -35,7 +57,9 @@ async def update_progress(
 
     if not progress or progress.user_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
-
+    if progress.status == ProgressStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Module already completed" \"")
+                            
     # 2. Validate scenario 
     scenario = db.query(Scenario).filter(
     Scenario.scenario_index == data.scenario_index,
@@ -47,7 +71,9 @@ async def update_progress(
     # 3. Validate order
     if data.scenario_index != progress.current_scenario_index:
         raise HTTPException(status_code=400, detail="Invalid scenario order")
-
+    
+    if data.scenario_index < progress.current_scenario_index:
+        raise HTTPException(status_code=400, detail="Scenario already completed")
     
     # 4. Update progress
     if data.status == "completed":
@@ -58,12 +84,14 @@ async def update_progress(
     # stay on same scenario 
         pass
 
-    db.add(progress)
-    db.commit()
-    db.refresh(progress)
-
     # 5. Get next scenario
     next_scenario = get_next_scenario(db, progress.module_id, progress.current_scenario_index)
+    
+    if next_scenario is None:
+        progress.status = ProgressStatus.COMPLETED  
+        db.add(progress)
+        db.commit()
+        db.refresh(progress)
 
     # 6. Calculate progress
     total_score=progress.total_score
@@ -81,24 +109,5 @@ async def update_progress(
     }
 
 
-def get_session(db, session_token: str):
-    return db.query(TrainingSession).filter(
-        TrainingSession.session_token == session_token
-    ).first()
-
-def get_next_scenario(db, module_id: str, next_index: int):
-    return db.query(Scenario).filter(
-        Scenario.module_id == module_id,
-        Scenario.scenario_index == next_index
-    ).first()
 
 
-def calculate_progress(db, module_id: str, current_index: int):
-    total = db.query(Scenario).filter(
-        Scenario.module_id == module_id
-    ).count()
-
-    if total == 0:
-        return 0
-
-    return round((current_index / total) * 100)
