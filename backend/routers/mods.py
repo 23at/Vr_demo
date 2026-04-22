@@ -200,21 +200,31 @@ def get_modules(
 
     for m in modules:
         progress = db.query(Progress).filter(
-        Progress.user_id == current_user.user_id,
-        Progress.module_id == m.module_id
-    ).first()
+            Progress.user_id == current_user.user_id,
+            Progress.module_id == m.module_id
+        ).first()
 
-    if progress and progress.status == ProgressStatus.COMPLETED:
-        status = "COMPLETED"
-    else:
-        status = "INCOMPLETE"
+        if progress and progress.status == ProgressStatus.COMPLETED:
+            status = "Completed"
+            progress_pct = 100
+        elif progress:
+            total = db.query(Scenario).filter(
+                Scenario.module_id == m.module_id
+            ).count()
+            progress_pct = round((progress.current_scenario_index / total) * 100) if total else 0
+            status = "Incomplete"
+        else:
+            status = "Incomplete"
+            progress_pct = 0
 
-    result.append({
-        "module_id": m.module_id,
-        "module_name": m.module_name,
-        "version": m.version,
-        "status": status
-    })
+
+        result.append({
+            "module_id": m.module_id,
+            "module_name": m.module_name,
+            "version": m.version,
+            "status": status,
+            "progress_pct": progress_pct
+        })
 
     return result
 

@@ -90,23 +90,28 @@ const launchVR = async (module) => {
 
         {modules.map((mod) => (
           <div key={mod.module_id} className="card">
-            <h3>{mod.module_name}</h3>
-            <p>Version: {mod.version}</p>
+          <h3>{mod.module_name}</h3>
+          <p>Version: {mod.version}</p>
 
-            <p>
-              Status:{" "}
+          <div className="progress-section">
+            <div className="progress-label">
+              <span>Progress</span>
               <span className={mod.status === "COMPLETED" ? "status complete" : "status incomplete"}>
-                {mod.status === "COMPLETED" ? "Complete" : "Incomplete"}
+                {mod.status === "COMPLETED" ? "Complete" : `${mod.progress_pct}%`}
               </span>
-            </p>
-
-            <button
-              className="primary-btn"
-              onClick={() => launchVR(mod)}
-            >
-              Launch Training
-            </button>
+            </div>
+            <div className="progress-bar-track">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${mod.progress_pct}%` }}
+              />
+            </div>
           </div>
+
+          <button className="primary-btn" onClick={() => launchVR(mod)}>
+            Launch Training
+          </button>
+        </div>
         ))}
       </div>
     </div>
