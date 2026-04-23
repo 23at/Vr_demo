@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import User, UserModule, Role
-from ..schemas import UserUpdate
+from ..models import User, UserModule, Role, Progress, Scenario
+from ..schemas import UserUpdate, ProgressStatus
 from ..auth.auth_handler import get_current_active_user
 from ..auth.auth_handler import get_password_hash
 
@@ -15,23 +15,44 @@ def require_admin(user):
     return user
 
 
-# GET ALL USERS + THEIR MODULES
+# GET ALL USERS + THEIR MODULES WITH PROGRESS
 @router.get("/users")
 def get_users(db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     require_admin(current_user)
 
     users = db.query(User).filter(
-    User.role != Role.ADMIN,              # exclude admins
-    User.user_id != current_user.user_id  # exclude yourself
+        User.role != Role.ADMIN,
+        User.user_id != current_user.user_id
     ).all()
 
     result = []
     for user in users:
         modules = []
         for um in user.assigned_modules:
+            # Look up this user's progress for this module
+            progress = db.query(Progress).filter(
+                Progress.user_id == user.user_id,
+                Progress.module_id == um.module.module_id
+            ).first()
+
+            if progress and progress.status == ProgressStatus.COMPLETED:
+                status = "Completed"
+                progress_pct = 100
+            elif progress:
+                total = db.query(Scenario).filter(
+                    Scenario.module_id == um.module.module_id
+                ).count()
+                progress_pct = round((progress.current_scenario_index / total) * 100) if total else 0
+                status = "In Progress"
+            else:
+                status = "Not Started"
+                progress_pct = 0
+
             modules.append({
                 "module_id": um.module.module_id,
                 "module_name": um.module.module_name,
+                "status": status,
+                "progress_pct": progress_pct,
             })
 
         result.append({
@@ -86,21 +107,16 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if data.username:
-        user.username=data.username
+        user.username = data.username
     if data.email:
         user.email = data.email
-
     if data.name:
         user.username = data.name
-
     if data.password:
         user.password_hash = get_password_hash(data.password)
 
-
     db.commit()
-
     return {"message": "User updated"}
-
 
 
 @router.delete("/users/{user_id}")

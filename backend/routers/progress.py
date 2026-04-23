@@ -37,7 +37,7 @@ async def update_progress(
     if not progress or progress.user_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
     if progress.status == ProgressStatus.COMPLETED:
-        raise HTTPException(status_code=400, detail="Module already completed" )
+        raise HTTPException(status_code=400, detail="Module already completed")
                             
     # 2. Validate scenario 
     scenario = db.query(Scenario).filter(

@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const [modules, setModules] = useState([]);
   const [user, setUser] = useState("");
-
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -29,39 +28,19 @@ export default function Dashboard() {
 
   const loadUser = async () => {
     try {
-      const res = await api.get("/users/me"); // backend endpoint that returns logged-in user
+      const res = await api.get("/users/me");
       setUser(res.data.username);
-    } catch (err) {
+    } catch {
       console.error("Could not load user");
     }
   };
 
-const launchVR = async (module) => {
-
-  const jwt = localStorage.getItem("access_token");
-
-  alert(jwt);
-  try {
-    // 1. Call backend to create session
-    console.log("Launching module:", module);
-    const res = await api.post("/launch-module", {
-    module_id: module.module_id,
-   });
-
-    const data = res.data;
-   
-
-    // 2. Extract session info
-    const sessionToken = data.session_token;
-    const scenarioId = data.scenario_id;
-    
-    // 3. Launch VR launcher via custom protocol
-    const url = `vrlauncher://launch?module=${encodeURIComponent(
-      module.module_id
-    )}&session=${encodeURIComponent(sessionToken)}&scenario=${encodeURIComponent(
-      scenarioId
-    )}&token=${encodeURIComponent(jwt)}`;
-
+  const launchVR = async (module) => {
+    const jwt = localStorage.getItem("access_token");
+    try {
+      const res = await api.post("/launch-module", { module_id: module.module_id });
+      const { session_token, scenario_id } = res.data;
+      const url = `vrlauncher://launch?module=${encodeURIComponent(module.module_id)}&session=${encodeURIComponent(session_token)}&scenario=${encodeURIComponent(scenario_id)}&token=${encodeURIComponent(jwt)}`;
       window.location.href = url;
     } catch (err) {
       console.error(err);
@@ -69,50 +48,95 @@ const launchVR = async (module) => {
     }
   };
 
+  const completedCount = modules.filter((m) => m.status === "Completed").length;
+
   return (
     <div className="app-layout">
-      {/* Sidebar */}
       <div className="sidebar">
-        <h2 className="sidebar-title">V-TRAIN</h2>
-        <a className="sidebar-link" href="/dashboard">Dashboard</a>
-        <a className="sidebar-link" href="/download-launcher">Download Launcher</a>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">⚡</div>
+          <h2 className="sidebar-title">V-TRAIN</h2>
+        </div>
+        <span className="sidebar-section-label">Navigation</span>
+        <a className="sidebar-link" href="/dashboard">
+          <span className="link-icon">🏠</span> Dashboard
+        </a>
+        <a className="sidebar-link" href="/download-launcher">
+          <span className="link-icon">⬇️</span> Download Launcher
+        </a>
+        <div className="sidebar-spacer" />
         <button className="logout-btn" onClick={handleLogout}>
-          Logout
+          <span>🚪</span> Logout
         </button>
       </div>
 
-
-      {/* Main */}
       <div className="main-content">
-        <h1>Welcome, {user}</h1>
-
-        {modules.length === 0 && <p>No modules assigned</p>}
-
-        {modules.map((mod) => (
-          <div key={mod.module_id} className="card">
-          <h3>{mod.module_name}</h3>
-          <p>Version: {mod.version}</p>
-
-          <div className="progress-section">
-            <div className="progress-label">
-              <span>Progress</span>
-              <span className={mod.status === "COMPLETED" ? "status complete" : "status incomplete"}>
-                {mod.status === "COMPLETED" ? "Complete" : `${mod.progress_pct}%`}
-              </span>
-            </div>
-            <div className="progress-bar-track">
-              <div
-                className="progress-bar-fill"
-                style={{ width: `${mod.progress_pct}%` }}
-              />
-            </div>
-          </div>
-
-          <button className="primary-btn" onClick={() => launchVR(mod)}>
-            Launch Training
-          </button>
+        <div className="page-header">
+          <h1>Welcome, {user || "—"}</h1>
+          <p>Your assigned training modules are below.</p>
         </div>
-        ))}
+
+        {/* Quick stats */}
+        <div className="stats-row">
+          <div className="stat-card">
+            <div className="stat-value">{modules.length}</div>
+            <div className="stat-label">Assigned</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{completedCount}</div>
+            <div className="stat-label">Completed</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{modules.length - completedCount}</div>
+            <div className="stat-label">Remaining</div>
+          </div>
+        </div>
+
+        {modules.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state-icon">📦</div>
+            No modules assigned yet. Contact your administrator.
+          </div>
+        )}
+
+        {modules.map((mod) => {
+          const isComplete = mod.status === "Completed";
+          return (
+            <div key={mod.module_id} className="module-card">
+              <div className="module-card-header">
+                <div>
+                  <div className="module-card-title">{mod.module_name}</div>
+                  <div className="module-card-version">v{mod.version}</div>
+                </div>
+                <span className={`badge ${isComplete ? "badge-success" : mod.progress_pct > 0 ? "badge-info" : "badge-muted"}`}>
+                  {isComplete ? "✓ Complete" : mod.progress_pct > 0 ? "In Progress" : "Not Started"}
+                </span>
+              </div>
+
+              <div className="progress-section">
+                <div className="progress-label">
+                  <span>Progress</span>
+                  <span className="pct">{mod.progress_pct}%</span>
+                </div>
+                <div className="progress-track">
+                  <div
+                    className={`progress-fill${isComplete ? " complete" : ""}`}
+                    style={{ width: `${mod.progress_pct}%` }}
+                  />
+                </div>
+              </div>
+
+              <button
+                className="primary-btn"
+                onClick={() => launchVR(mod)}
+                disabled={isComplete}
+                style={isComplete ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+              >
+                {isComplete ? "✓ Completed" : "▶ Launch Training"}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
