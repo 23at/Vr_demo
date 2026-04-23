@@ -22,7 +22,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db), current_user=
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered.")
     password_hash = get_password_hash(user.password)
-    db_user = User(username=user.username, email=user.email, role=user.role, password_hash=password_hash)
+    db_user = User(username=user.username, email=user.email, first_name=user.first_name, last_name=user.last_name, role=user.role, password_hash=password_hash)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

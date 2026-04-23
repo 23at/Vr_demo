@@ -30,7 +30,9 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
-    role: Role= Role.USER
+    first_name: str | None = None
+    last_name: str | None = None
+    role: Role = Role.USER
     
 class UserUpdate(BaseModel):
     username: Optional[str]=None
