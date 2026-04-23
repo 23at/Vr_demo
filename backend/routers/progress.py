@@ -9,27 +9,6 @@ from ..auth.auth_handler import get_current_active_user
 
 router = APIRouter()
 
-def get_session(db, session_token: str):
-    return db.query(TrainingSession).filter(
-        TrainingSession.session_token == session_token
-    ).first()
-
-def get_next_scenario(db, module_id: str, next_index: int):
-    return db.query(Scenario).filter(
-        Scenario.module_id == module_id,
-        Scenario.scenario_index == next_index
-    ).first()
-
-
-def calculate_progress(db, module_id: str, current_index: int):
-    total = db.query(Scenario).filter(
-        Scenario.module_id == module_id
-    ).count()
-
-    if total == 0:
-        return 0
-
-    return round((current_index / total) * 100)
 
 class ProgressRequest(BaseModel):
     scenario_index: int
@@ -58,7 +37,7 @@ async def update_progress(
     if not progress or progress.user_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
     if progress.status == ProgressStatus.COMPLETED:
-        raise HTTPException(status_code=400, detail="Module already completed" \"")
+        raise HTTPException(status_code=400, detail="Module already completed" )
                             
     # 2. Validate scenario 
     scenario = db.query(Scenario).filter(
@@ -110,4 +89,24 @@ async def update_progress(
 
 
 
+def get_session(db, session_token: str):
+    return db.query(TrainingSession).filter(
+        TrainingSession.session_token == session_token
+    ).first()
 
+def get_next_scenario(db, module_id: str, next_index: int):
+    return db.query(Scenario).filter(
+        Scenario.module_id == module_id,
+        Scenario.scenario_index == next_index
+    ).first()
+
+
+def calculate_progress(db, module_id: str, current_index: int):
+    total = db.query(Scenario).filter(
+        Scenario.module_id == module_id
+    ).count()
+
+    if total == 0:
+        return 0
+
+    return round((current_index / total) * 100)
