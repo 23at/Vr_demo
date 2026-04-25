@@ -58,6 +58,8 @@ def get_users(db: Session = Depends(get_db), current_user=Depends(get_current_ac
         result.append({
             "user_id": user.user_id,
             "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
             "modules": modules
         })
 

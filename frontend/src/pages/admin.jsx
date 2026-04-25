@@ -10,7 +10,7 @@ function Sidebar({ onLogout }) {
         <h2 className="sidebar-title">V-TRAIN</h2>
       </div>
       <span className="sidebar-section-label">Admin</span>
-      <a className="sidebar-link" href="/admin">
+      <a className="sidebar-link active" href="/admin">
         <span className="link-icon">🏠</span> Dashboard
       </a>
       <a className="sidebar-link" href="/admin/users">
@@ -40,6 +40,12 @@ function ProgressBar({ pct, complete }) {
       />
     </div>
   );
+}
+
+// Prefer "First Last" over username when available
+function displayName(user) {
+  const full = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  return full || user.username;
 }
 
 export default function Admin() {
@@ -210,12 +216,15 @@ export default function Admin() {
         {users.map((user) => (
           <div key={user.user_id} className="user-card">
             <div className="user-card-header">
+              {/* Avatar initials from first name if available, else username */}
               <div className="user-avatar">
-                {user.username.slice(0, 2).toUpperCase()}
+                {(user.first_name || user.username).slice(0, 2).toUpperCase()}
               </div>
               <div className="user-info">
-                <div className="user-name">{user.username}</div>
+                {/* Full name shown here instead of raw username */}
+                <div className="user-name">{displayName(user)}</div>
                 <div className="user-meta">
+                  @{user.username} ·{" "}
                   {user.modules.length === 0
                     ? "No modules assigned"
                     : `${user.modules.length} module${user.modules.length > 1 ? "s" : ""} assigned`}

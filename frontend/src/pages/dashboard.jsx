@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [modules, setModules] = useState([]);
-  const [user, setUser] = useState("");
+  const [firstName, setFirstName] = useState("");
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -28,8 +28,9 @@ export default function Dashboard() {
 
   const loadUser = async () => {
     try {
-      const res = await api.get("/users/me");
-      setUser(res.data.username);
+      const res = await api.get("/users/me/");
+      // Use first_name if set, fall back to username
+      setFirstName(res.data.first_name || res.data.username);
     } catch {
       console.error("Could not load user");
     }
@@ -58,7 +59,7 @@ export default function Dashboard() {
           <h2 className="sidebar-title">V-TRAIN</h2>
         </div>
         <span className="sidebar-section-label">Navigation</span>
-        <a className="sidebar-link" href="/dashboard">
+        <a className="sidebar-link active" href="/dashboard">
           <span className="link-icon">🏠</span> Dashboard
         </a>
         <a className="sidebar-link" href="/download-launcher">
@@ -72,11 +73,11 @@ export default function Dashboard() {
 
       <div className="main-content">
         <div className="page-header">
-          <h1>Welcome, {user || "—"}</h1>
+          {/* Shows "Welcome, John" if first_name is set, else "Welcome, johndoe" */}
+          <h1>Welcome, {firstName || "—"}</h1>
           <p>Your assigned training modules are below.</p>
         </div>
 
-        {/* Quick stats */}
         <div className="stats-row">
           <div className="stat-card">
             <div className="stat-value">{modules.length}</div>

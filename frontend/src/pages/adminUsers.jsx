@@ -21,15 +21,23 @@ function Sidebar({ onLogout }) {
   );
 }
 
+const emptyNew = { username: "", email: "", password: "", role: "USER", first_name: "", last_name: "" };
+
+// Prefer "First Last" over username when available
+function displayName(user) {
+  const full = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  return full || user.username;
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState({ username: "", email: "", password: "", role: "USER" });
+  const [newUser, setNewUser] = useState(emptyNew);
   const [editUser, setEditUser] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadUsers();
     if (!localStorage.getItem("access_token")) navigate("/");
+    loadUsers();
   }, []);
 
   const loadUsers = async () => {
@@ -44,10 +52,10 @@ export default function AdminUsers() {
 
   const createUser = async () => {
     if (!newUser.username || !newUser.email || !newUser.password)
-      return alert("All fields are required");
+      return alert("Username, email, and password are required");
     try {
       await api.post("/auth/register", newUser);
-      setNewUser({ username: "", email: "", password: "", role: "USER" });
+      setNewUser(emptyNew);
       loadUsers();
     } catch {
       alert("Failed to create user");
@@ -56,18 +64,44 @@ export default function AdminUsers() {
 
   const updateUser = async (userId) => {
     const data = editUser[userId];
-    await api.put(`/admin/users/${userId}`, null, {
-      params: { username: data.username, email: data.email, password: data.password, role: data.role },
-    });
-    alert("User updated!");
-    loadUsers();
+    if (!data) return;
+    try {
+      await api.put(`/admin/users/${userId}`, data);
+      alert("User updated!");
+      setEditUser((prev) => { const n = { ...prev }; delete n[userId]; return n; });
+      loadUsers();
+    } catch {
+      alert("Failed to update user");
+    }
   };
 
   const deleteUser = async (userId) => {
     if (!window.confirm("Delete this user? This cannot be undone.")) return;
-    await api.delete(`/admin/users/${userId}`);
-    loadUsers();
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      loadUsers();
+    } catch {
+      alert("Failed to delete user");
+    }
   };
+
+  const startEdit = (user) =>
+    setEditUser((prev) => ({
+      ...prev,
+      [user.user_id]: {
+        username: user.username,
+        email: user.email || "",
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        password: "",
+      },
+    }));
+
+  const cancelEdit = (userId) =>
+    setEditUser((prev) => { const n = { ...prev }; delete n[userId]; return n; });
+
+  const setField = (userId, field, value) =>
+    setEditUser((prev) => ({ ...prev, [userId]: { ...prev[userId], [field]: value } }));
 
   return (
     <div className="app-layout">
@@ -79,25 +113,49 @@ export default function AdminUsers() {
           <p>Create, edit, and manage trainee accounts.</p>
         </div>
 
-        {/* Create User */}
+        {/* ── Create User ── */}
         <div className="card">
           <h3>Create New User</h3>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+            <div>
+              <label className="form-label">First Name</label>
+              <input
+                placeholder="First name"
+                value={newUser.first_name}
+                onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="form-label">Last Name</label>
+              <input
+                placeholder="Last name"
+                value={newUser.last_name}
+                onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <label className="form-label">Username</label>
           <input
             placeholder="Username"
             value={newUser.username}
             onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
           />
+          <label className="form-label">Email</label>
           <input
             placeholder="Email address"
             value={newUser.email}
             onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
           />
+          <label className="form-label">Password</label>
           <input
             type="password"
             placeholder="Password"
             value={newUser.password}
             onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
           />
+          <label className="form-label">Role</label>
           <select
             value={newUser.role}
             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
@@ -105,10 +163,11 @@ export default function AdminUsers() {
             <option value="USER">User</option>
             <option value="ADMIN">Admin</option>
           </select>
+
           <button className="primary-btn" onClick={createUser}>+ Create User</button>
         </div>
 
-        {/* User List */}
+        {/* ── User List ── */}
         <p className="section-heading">All Users ({users.length})</p>
 
         {users.length === 0 && (
@@ -119,58 +178,84 @@ export default function AdminUsers() {
         )}
 
         {users.map((user) => {
-          const current = editUser[user.user_id] || user;
+          const isEditing = !!editUser[user.user_id];
+          const cur = editUser[user.user_id] || {};
+
           return (
             <div key={user.user_id} className="user-card">
+              {/* Header — shows full name when available */}
               <div className="user-card-header">
-                <div className="user-avatar">{user.username.slice(0, 2).toUpperCase()}</div>
+                <div className="user-avatar">
+                  {(user.first_name || user.username).slice(0, 2).toUpperCase()}
+                </div>
                 <div className="user-info">
-                  <div className="user-name">{user.username}</div>
-                  <div className="user-meta">ID #{user.user_id}</div>
+                  <div className="user-name">{displayName(user)}</div>
+                  <div className="user-meta">@{user.username} · ID #{user.user_id}</div>
                 </div>
               </div>
-              <div className="user-card-body">
-                <input
-                  value={current.username || ""}
-                  placeholder="Username"
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, [user.user_id]: { ...current, username: e.target.value } })
-                  }
-                />
-                <input
-                  value={current.email || ""}
-                  placeholder="Email"
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, [user.user_id]: { ...current, email: e.target.value } })
-                  }
-                />
-                <input
-                  type="password"
-                  placeholder="New password (leave blank to keep)"
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, [user.user_id]: { ...current, password: e.target.value } })
-                  }
-                />
-                <select
-                  value={current.role || "USER"}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, [user.user_id]: { ...current, role: e.target.value } })
-                  }
-                >
-                  <option value="USER">User</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              </div>
+
+              {/* Edit form — only shown when editing */}
+              {isEditing && (
+                <div className="user-card-body">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+                    <div>
+                      <label className="form-label">First Name</label>
+                      <input
+                        value={cur.first_name}
+                        placeholder="First name"
+                        onChange={(e) => setField(user.user_id, "first_name", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Last Name</label>
+                      <input
+                        value={cur.last_name}
+                        placeholder="Last name"
+                        onChange={(e) => setField(user.user_id, "last_name", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <label className="form-label">Username</label>
+                  <input
+                    value={cur.username}
+                    placeholder="Username"
+                    onChange={(e) => setField(user.user_id, "username", e.target.value)}
+                  />
+                  <label className="form-label">Email</label>
+                  <input
+                    value={cur.email}
+                    placeholder="Email"
+                    onChange={(e) => setField(user.user_id, "email", e.target.value)}
+                  />
+                  <label className="form-label">New Password</label>
+                  <input
+                    type="password"
+                    placeholder="Leave blank to keep current"
+                    value={cur.password}
+                    onChange={(e) => setField(user.user_id, "password", e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Footer buttons */}
               <div className="user-card-footer">
-                <button className="primary-btn btn-sm" onClick={() => updateUser(user.user_id)}>
-                  Save Changes
-                </button>
-                <button
-                  className="primary-btn btn-sm btn-danger"
-                  onClick={() => deleteUser(user.user_id)}
-                >
-                  Delete
-                </button>
+                {isEditing ? (
+                  <>
+                    <button className="primary-btn btn-sm" onClick={() => updateUser(user.user_id)}>
+                      Save Changes
+                    </button>
+                    <button className="primary-btn btn-sm btn-secondary" onClick={() => cancelEdit(user.user_id)}>
+                      Cancel
+                    </button>
+                    <button className="primary-btn btn-sm btn-danger" onClick={() => deleteUser(user.user_id)}>
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <button className="primary-btn btn-sm btn-secondary" onClick={() => startEdit(user)}>
+                    Edit
+                  </button>
+                )}
               </div>
             </div>
           );
