@@ -66,12 +66,20 @@ export default function AdminUsers() {
     const data = editUser[userId];
     if (!data) return;
     try {
-      await api.put(`/admin/users/${userId}`, data);
+      // Only send fields that have actual values
+      const payload = {};
+      if (data.username)   payload.username   = data.username;
+      if (data.email)      payload.email      = data.email;
+      if (data.first_name !== undefined) payload.first_name = data.first_name || null;
+      if (data.last_name !== undefined)  payload.last_name  = data.last_name || null;
+      if (data.password)   payload.password   = data.password;
+
+      await api.put(`/admin/users/${userId}`, payload);
       alert("User updated!");
       setEditUser((prev) => { const n = { ...prev }; delete n[userId]; return n; });
       loadUsers();
-    } catch {
-      alert("Failed to update user");
+    } catch (err) {
+      alert(err.response?.data?.detail || "Failed to update user");
     }
   };
 

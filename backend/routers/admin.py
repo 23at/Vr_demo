@@ -15,7 +15,6 @@ def require_admin(user):
     return user
 
 
-# GET ALL USERS + THEIR MODULES WITH PROGRESS
 @router.get("/users")
 def get_users(db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     require_admin(current_user)
@@ -29,7 +28,6 @@ def get_users(db: Session = Depends(get_db), current_user=Depends(get_current_ac
     for user in users:
         modules = []
         for um in user.assigned_modules:
-            # Look up this user's progress for this module
             progress = db.query(Progress).filter(
                 Progress.user_id == user.user_id,
                 Progress.module_id == um.module.module_id
@@ -58,15 +56,14 @@ def get_users(db: Session = Depends(get_db), current_user=Depends(get_current_ac
         result.append({
             "user_id": user.user_id,
             "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "modules": modules
+            "first_name": user.first_name,   # ← added
+            "last_name": user.last_name,      # ← added
+            "modules": modules,
         })
 
     return result
 
 
-# ASSIGN MODULE
 @router.post("/assign")
 def assign_module(
     user_id: int,
@@ -92,7 +89,6 @@ def assign_module(
 
     db.add(new_assignment)
     db.commit()
-
     return {"message": "Module assigned"}
 
 
@@ -108,12 +104,15 @@ def update_user(
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     if data.username:
         user.username = data.username
     if data.email:
         user.email = data.email
-    if data.name:
-        user.username = data.name
+    if data.first_name is not None:   # ← added
+        user.first_name = data.first_name
+    if data.last_name is not None:    # ← added
+        user.last_name = data.last_name
     if data.password:
         user.password_hash = get_password_hash(data.password)
 
@@ -130,11 +129,9 @@ def delete_user(
     require_admin(current_user)
 
     user = db.query(User).filter(User.user_id == user_id).first()
-
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     db.delete(user)
     db.commit()
-
     return {"message": "User deleted"}
