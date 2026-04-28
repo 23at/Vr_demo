@@ -66,6 +66,7 @@ export default function Dashboard() {
         <a className="sidebar-link active" href="/dashboard" aria-current="page">
           <span className="link-icon" aria-hidden="true">🏠</span> Dashboard
         </a>
+        <span className="sidebar-section-label" aria-hidden="true">System</span>
         <a className="sidebar-link" href="/download-launcher">
           <span className="link-icon" aria-hidden="true">⬇️</span> Download Launcher
         </a>
