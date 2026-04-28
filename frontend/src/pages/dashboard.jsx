@@ -17,6 +17,11 @@ export default function Dashboard() {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    if (firstName) document.title = `Dashboard — ${firstName} — V-TRAIN`;
+    else document.title = "Dashboard — V-TRAIN";
+  }, [firstName]);
+
   const loadModules = async () => {
     try {
       const res = await api.get("/modules");
@@ -29,7 +34,6 @@ export default function Dashboard() {
   const loadUser = async () => {
     try {
       const res = await api.get("/users/me/");
-      // Use first_name if set, fall back to username
       setFirstName(res.data.first_name || res.data.username);
     } catch {
       console.error("Could not load user");
@@ -53,92 +57,105 @@ export default function Dashboard() {
 
   return (
     <div className="app-layout">
-      <div className="sidebar">
+      <nav className="sidebar" aria-label="Main navigation">
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">⚡</div>
+          <div className="sidebar-logo-icon" aria-hidden="true">⚡</div>
           <h2 className="sidebar-title">V-TRAIN</h2>
         </div>
-        <span className="sidebar-section-label">Navigation</span>
-        <a className="sidebar-link active" href="/dashboard">
-          <span className="link-icon">🏠</span> Dashboard
+        <span className="sidebar-section-label" aria-hidden="true">Navigation</span>
+        <a className="sidebar-link active" href="/dashboard" aria-current="page">
+          <span className="link-icon" aria-hidden="true">🏠</span> Dashboard
         </a>
         <a className="sidebar-link" href="/download-launcher">
-          <span className="link-icon">⬇️</span> Download Launcher
+          <span className="link-icon" aria-hidden="true">⬇️</span> Download Launcher
         </a>
         <div className="sidebar-spacer" />
-        <button className="logout-btn" onClick={handleLogout}>
-          <span>🚪</span> Logout
+        <button className="logout-btn" onClick={handleLogout} aria-label="Logout">
+          <span aria-hidden="true">🚪</span> Logout
         </button>
-      </div>
+      </nav>
 
-      <div className="main-content">
+      <main className="main-content" id="main-content">
         <div className="page-header">
-          {/* Shows "Welcome, John" if first_name is set, else "Welcome, johndoe" */}
           <h1>Welcome, {firstName || "—"}</h1>
           <p>Your assigned training modules are below.</p>
         </div>
 
-        <div className="stats-row">
+        <div className="stats-row" aria-label="Training summary">
           <div className="stat-card">
-            <div className="stat-value">{modules.length}</div>
-            <div className="stat-label">Assigned</div>
+            <div className="stat-value" aria-label={`${modules.length} modules assigned`}>{modules.length}</div>
+            <div className="stat-label" aria-hidden="true">Assigned</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{completedCount}</div>
-            <div className="stat-label">Completed</div>
+            <div className="stat-value" aria-label={`${completedCount} modules completed`}>{completedCount}</div>
+            <div className="stat-label" aria-hidden="true">Completed</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{modules.length - completedCount}</div>
-            <div className="stat-label">Remaining</div>
+            <div className="stat-value" aria-label={`${modules.length - completedCount} modules remaining`}>{modules.length - completedCount}</div>
+            <div className="stat-label" aria-hidden="true">Remaining</div>
           </div>
         </div>
 
         {modules.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-state-icon">📦</div>
+          <div className="empty-state" role="status">
+            <div className="empty-state-icon" aria-hidden="true">📦</div>
             No modules assigned yet. Contact your administrator.
           </div>
         )}
 
-        {modules.map((mod) => {
-          const isComplete = mod.status === "Completed";
-          return (
-            <div key={mod.module_id} className="module-card">
-              <div className="module-card-header">
-                <div>
-                  <div className="module-card-title">{mod.module_name}</div>
-                  <div className="module-card-version">v{mod.version}</div>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Training modules">
+          {modules.map((mod) => {
+            const isComplete = mod.status === "Completed";
+            return (
+              <li key={mod.module_id} className="module-card">
+                <div className="module-card-header">
+                  <div>
+                    <div className="module-card-title">{mod.module_name}</div>
+                    <div className="module-card-version">v{mod.version}</div>
+                  </div>
+                  <span
+                    className={`badge ${isComplete ? "badge-success" : mod.progress_pct > 0 ? "badge-info" : "badge-muted"}`}
+                    aria-label={`Status: ${isComplete ? "Complete" : mod.progress_pct > 0 ? "In Progress" : "Not Started"}`}
+                  >
+                    {isComplete ? "✓ Complete" : mod.progress_pct > 0 ? "In Progress" : "Not Started"}
+                  </span>
                 </div>
-                <span className={`badge ${isComplete ? "badge-success" : mod.progress_pct > 0 ? "badge-info" : "badge-muted"}`}>
-                  {isComplete ? "✓ Complete" : mod.progress_pct > 0 ? "In Progress" : "Not Started"}
-                </span>
-              </div>
 
-              <div className="progress-section">
-                <div className="progress-label">
-                  <span>Progress</span>
-                  <span className="pct">{mod.progress_pct}%</span>
-                </div>
-                <div className="progress-track">
+                <div className="progress-section">
+                  <div className="progress-label">
+                    <span>Progress</span>
+                    <span className="pct" aria-hidden="true">{mod.progress_pct}%</span>
+                  </div>
                   <div
-                    className={`progress-fill${isComplete ? " complete" : ""}`}
-                    style={{ width: `${mod.progress_pct}%` }}
-                  />
+                    className="progress-track"
+                    role="progressbar"
+                    aria-valuenow={mod.progress_pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${mod.module_name} progress: ${mod.progress_pct}%`}
+                  >
+                    <div
+                      className={`progress-fill${isComplete ? " complete" : ""}`}
+                      style={{ width: `${mod.progress_pct}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <button
-                className="primary-btn"
-                onClick={() => launchVR(mod)}
-                disabled={isComplete}
-                style={isComplete ? { opacity: 0.5, cursor: "not-allowed" } : {}}
-              >
-                {isComplete ? "✓ Completed" : "▶ Launch Training"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                <button
+                  className="primary-btn"
+                  onClick={() => launchVR(mod)}
+                  disabled={isComplete}
+                  aria-disabled={isComplete}
+                  aria-label={isComplete ? `${mod.module_name} — already completed` : `Launch ${mod.module_name} training`}
+                  style={isComplete ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                >
+                  {isComplete ? "✓ Completed" : "▶ Launch Training"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </main>
     </div>
   );
 }
