@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from ..models import TrainingSession, Progress, Scenario
 from ..schemas import ProgressStatus
@@ -67,10 +67,13 @@ async def update_progress(
     next_scenario = get_next_scenario(db, progress.module_id, progress.current_scenario_index)
     
     if next_scenario is None:
-        progress.status = ProgressStatus.COMPLETED  
-        db.add(progress)
-        db.commit()
-        db.refresh(progress)
+        progress.status = ProgressStatus.COMPLETED
+    else:
+        progress.status = ProgressStatus.INPROGRESS
+
+    db.add(progress)
+    db.commit()
+    db.refresh(progress)
 
     # 6. Calculate progress
     total_score=progress.total_score

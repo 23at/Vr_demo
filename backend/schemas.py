@@ -80,7 +80,7 @@ class ModuleResponse(BaseModel):
 #sceanrios  
 class ScenarioCreate(BaseModel):
     name: str
-    module_id: int
+    module_id: str
     scenario_index: int
 
 
@@ -95,12 +95,12 @@ class ScenarioResponse(BaseModel):
 
     scenario_id: int
     name: str
-    module_id: int
+    module_id: str
 
 #progress
 class ProgressCreate(BaseModel):
     user_id: int
-    module_id: int
+    module_id: str
     status: ProgressStatus = ProgressStatus.INPROGRESS
     current_scenario_index: int = 0
     total_score: float = 0.0
