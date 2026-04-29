@@ -38,6 +38,15 @@ BUCKET_NAME = "training-modules"
 
 CHUNK_SIZE= 10 *1024 * 1024
 MULTIPART_THRESHOLD=50 * 1024*1024
+
+def bump_patch_version(version: str) -> str:
+    parts = version.split(".")
+    if len(parts) != 3:
+        return "1.0.0"
+
+    major, minor, patch = parts
+    return f"{int(major)}.{int(minor)}.{int(patch) + 1}"
+
 @router.post("/modules/{module_id}/upload")
 async def upload_module_file(
     module_id: str,
@@ -126,13 +135,17 @@ async def upload_module_file(
     
     module.r2_key = r2_key
     module.cdn_checksum = checksum
+
+    module.version = bump_patch_version(module.version or "1.0.0")
+
     db.commit()
 
     return {
         "success": True,
         "module_id": module_id,
         "r2_key": r2_key,
-        "cdn_checksum": checksum
+        "cdn_checksum": checksum.capitalize,
+        "version": module.version,
     }
 
 
