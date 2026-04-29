@@ -4,20 +4,30 @@ import { useNavigate } from "react-router-dom";
 
 function Sidebar({ onLogout }) {
   return (
-    <div className="sidebar">
+    <nav className="sidebar" aria-label="Admin navigation">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">⚡</div>
+        <div className="sidebar-logo-icon" aria-hidden="true">⚡</div>
         <h2 className="sidebar-title">V-TRAIN</h2>
       </div>
-      <span className="sidebar-section-label">Admin</span>
-      <a className="sidebar-link" href="/admin"><span className="link-icon">🏠</span> Dashboard</a>
-      <a className="sidebar-link" href="/admin/users"><span className="link-icon">👥</span> User Management</a>
-      <a className="sidebar-link active" href="/admin/modules"><span className="link-icon">📦</span> Module Management</a>
-      <span className="sidebar-section-label">System</span>
-      <a className="sidebar-link" href="/download-launcher"><span className="link-icon">⬇️</span> Download Launcher</a>
+      <span className="sidebar-section-label" aria-hidden="true">Admin</span>
+      <a className="sidebar-link" href="/admin">
+        <span className="link-icon" aria-hidden="true">🏠</span> Dashboard
+      </a>
+      <a className="sidebar-link" href="/admin/users">
+        <span className="link-icon" aria-hidden="true">👥</span> User Management
+      </a>
+      <a className="sidebar-link active" href="/admin/modules" aria-current="page">
+        <span className="link-icon" aria-hidden="true">📦</span> Module Management
+      </a>
+      <span className="sidebar-section-label" aria-hidden="true">System</span>
+      <a className="sidebar-link" href="/download-launcher">
+        <span className="link-icon" aria-hidden="true">⬇️</span> Download Launcher
+      </a>
       <div className="sidebar-spacer" />
-      <button className="logout-btn" onClick={onLogout}><span>🚪</span> Logout</button>
-    </div>
+      <button className="logout-btn" onClick={onLogout} aria-label="Logout">
+        <span aria-hidden="true">🚪</span> Logout
+      </button>
+    </nav>
   );
 }
 
@@ -31,6 +41,7 @@ export default function AdminModules() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = "Module Management — V-TRAIN";
     loadModules();
     if (!localStorage.getItem("access_token")) navigate("/");
   }, []);
@@ -132,7 +143,7 @@ export default function AdminModules() {
     <div className="app-layout">
       <Sidebar onLogout={handleLogout} />
 
-      <div className="main-content">
+      <main className="main-content" id="main-content">
         <div className="page-header">
           <h1>Module Management</h1>
           <p>Configure training modules and their scenarios.</p>
@@ -140,8 +151,11 @@ export default function AdminModules() {
 
         {/* Module Selector */}
         <div className="card">
-          <h3>Select Module</h3>
+          <label htmlFor="module-select" className="form-label" style={{ fontSize: 15, fontWeight: 600 }}>
+            Select Module
+          </label>
           <select
+            id="module-select"
             value={selectedModuleId}
             onChange={(e) => setSelectedModuleId(e.target.value)}
           >
@@ -158,79 +172,133 @@ export default function AdminModules() {
           <>
             {/* Add Scenario */}
             <div className="card">
-              <h3>Add Scenario to "{selectedModule?.module_name}"</h3>
-              <input
-                placeholder="Scenario name"
-                value={newScenario.name}
-                onChange={(e) => setNewScenario({ ...newScenario, name: e.target.value })}
-              />
-              <input
-                type="number"
-                min="0"
-                placeholder="Index (0-based order)"
-                value={newScenario.scenario_index}
-                onChange={(e) => setNewScenario({ ...newScenario, scenario_index: e.target.value })}
-              />
-              <button className="primary-btn" onClick={addScenario}>+ Add Scenario</button>
+              <h2
+                id="add-scenario-heading"
+                style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}
+              >
+                Add Scenario to "{selectedModule?.module_name}"
+              </h2>
+              <div role="group" aria-labelledby="add-scenario-heading">
+                <label htmlFor="new-scenario-name" className="form-label">Scenario name</label>
+                <input
+                  id="new-scenario-name"
+                  placeholder="e.g. Fire Extinguisher Check"
+                  value={newScenario.name}
+                  onChange={(e) => setNewScenario({ ...newScenario, name: e.target.value })}
+                />
+                <label htmlFor="new-scenario-index" className="form-label">
+                  Index <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>(0-based order)</span>
+                </label>
+                <input
+                  id="new-scenario-index"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={newScenario.scenario_index}
+                  onChange={(e) => setNewScenario({ ...newScenario, scenario_index: e.target.value })}
+                />
+                <button className="primary-btn" onClick={addScenario}>+ Add Scenario</button>
+              </div>
             </div>
 
             {/* Scenario List */}
             <div className="card">
-              <h3>Scenarios ({scenarios.length})</h3>
-              {loadingScenarios && <p className="text-muted">Loading…</p>}
+              <h2
+                id="scenario-list-heading"
+                style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}
+              >
+                Scenarios ({scenarios.length})
+              </h2>
+              {loadingScenarios && <p className="text-muted" role="status">Loading…</p>}
               {!loadingScenarios && scenarios.length === 0 && (
-                <div className="empty-state" style={{ padding: "20px 0" }}>
+                <div className="empty-state" style={{ padding: "20px 0" }} role="status">
                   No scenarios yet. Add one above.
                 </div>
               )}
-              {!loadingScenarios && scenarios.map((s) => {
-                const isEditing = !!editScenario[s.scenario_id];
-                const cur = editScenario[s.scenario_id] || s;
-                return (
-                  <div key={s.scenario_id} className="scenario-row">
-                    {!isEditing && (
-                      <span className="scenario-index-badge">{s.scenario_index}</span>
-                    )}
-                    {isEditing ? (
-                      <>
-                        <input
-                          style={{ flex: 2, minWidth: 140, marginBottom: 0 }}
-                          value={cur.name}
-                          onChange={(e) => handleEditChange(s.scenario_id, "name", e.target.value)}
-                          placeholder="Scenario name"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          style={{ width: 80, marginBottom: 0 }}
-                          value={cur.scenario_index}
-                          onChange={(e) => handleEditChange(s.scenario_id, "scenario_index", e.target.value)}
-                          placeholder="Index"
-                        />
-                      </>
-                    ) : (
-                      <span className="scenario-name">{s.name}</span>
-                    )}
-                    <div className="flex-row">
+              <ul
+                aria-labelledby="scenario-list-heading"
+                style={{ listStyle: "none", margin: 0, padding: 0 }}
+              >
+                {!loadingScenarios && scenarios.map((s) => {
+                  const isEditing = !!editScenario[s.scenario_id];
+                  const cur = editScenario[s.scenario_id] || s;
+                  const sid = s.scenario_id;
+                  return (
+                    <li key={sid} className="scenario-row">
+                      {!isEditing && (
+                        <span className="scenario-index-badge" aria-label={`Step ${s.scenario_index}`}>
+                          {s.scenario_index}
+                        </span>
+                      )}
                       {isEditing ? (
                         <>
-                          <button className="primary-btn btn-sm" onClick={() => saveScenario(s.scenario_id)}>Save</button>
-                          <button className="primary-btn btn-sm btn-secondary" onClick={() => cancelEdit(s.scenario_id)}>Cancel</button>
+                          <label htmlFor={`s-name-${sid}`} className="sr-only">Scenario name</label>
+                          <input
+                            id={`s-name-${sid}`}
+                            style={{ flex: 2, minWidth: 140, marginBottom: 0 }}
+                            value={cur.name}
+                            onChange={(e) => handleEditChange(sid, "name", e.target.value)}
+                            placeholder="Scenario name"
+                          />
+                          <label htmlFor={`s-idx-${sid}`} className="sr-only">Scenario index</label>
+                          <input
+                            id={`s-idx-${sid}`}
+                            type="number"
+                            min="0"
+                            style={{ width: 80, marginBottom: 0 }}
+                            value={cur.scenario_index}
+                            onChange={(e) => handleEditChange(sid, "scenario_index", e.target.value)}
+                            placeholder="Index"
+                          />
                         </>
                       ) : (
-                        <>
-                          <button className="primary-btn btn-sm btn-secondary" onClick={() => startEdit(s)}>Edit</button>
-                          <button className="primary-btn btn-sm btn-danger" onClick={() => deleteScenario(s.scenario_id, s.name)}>Delete</button>
-                        </>
+                        <span className="scenario-name">{s.name}</span>
                       )}
-                    </div>
-                  </div>
-                );
-              })}
+                      <div className="flex-row">
+                        {isEditing ? (
+                          <>
+                            <button
+                              className="primary-btn btn-sm"
+                              onClick={() => saveScenario(sid)}
+                              aria-label={`Save changes to scenario ${s.name}`}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="primary-btn btn-sm btn-secondary"
+                              onClick={() => cancelEdit(sid)}
+                              aria-label={`Cancel editing scenario ${s.name}`}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="primary-btn btn-sm btn-secondary"
+                              onClick={() => startEdit(s)}
+                              aria-label={`Edit scenario ${s.name}`}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="primary-btn btn-sm btn-danger"
+                              onClick={() => deleteScenario(sid, s.name)}
+                              aria-label={`Delete scenario ${s.name}`}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 }

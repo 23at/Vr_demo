@@ -37,8 +37,9 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     username: Optional[str]=None
     email: Optional[EmailStr] = None
-    name: Optional[str] = None
     password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 class UserResponse(BaseModel):
     model_config=ConfigDict(from_attributes=True)

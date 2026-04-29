@@ -747,3 +747,17 @@ select.dropdown:focus {
 .status.complete   { color: #15803d; font-weight: 600; }
 .status.incomplete { color: var(--text-muted); font-weight: 500; }
 .status-text       { color: var(--text-muted); font-size: 13px; }
+
+/* ─── Screen-reader only utility ────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+ 
