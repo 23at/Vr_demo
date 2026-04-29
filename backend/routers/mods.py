@@ -86,6 +86,7 @@ async def upload_module_file(
             parts=[]
             part_number =1
 
+            hasher = hashlib.sha256()
             for chunk in (first_chunk, next_chunk):
                 hasher.update(chunk)
                 resp = s3.upload_part(
@@ -132,6 +133,8 @@ async def upload_module_file(
             except Exception:
                 pass
         raise HTTPException(status_code=500, detail=f"Upload failed: {exc}") from exc
+    
+    
     
     module.r2_key = r2_key
     module.cdn_checksum = checksum
