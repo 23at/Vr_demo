@@ -144,7 +144,7 @@ async def upload_module_file(
         "success": True,
         "module_id": module_id,
         "r2_key": r2_key,
-        "cdn_checksum": checksum.capitalize,
+        "cdn_checksum": checksum,
         "version": module.version,
     }
 
