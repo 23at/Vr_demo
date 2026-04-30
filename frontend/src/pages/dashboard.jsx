@@ -44,8 +44,8 @@ export default function Dashboard() {
     const jwt = localStorage.getItem("access_token");
     try {
       const res = await api.post("/launch-module", { module_id: module.module_id });
-      const { session_token, scenario_id } = res.data;
-      const url = `vrlauncher://launch?module=${encodeURIComponent(module.module_id)}&session=${encodeURIComponent(session_token)}&scenario=${encodeURIComponent(scenario_id)}&token=${encodeURIComponent(jwt)}`;
+      const { session_token, scenario_id, scenario_index } = res.data;
+      const url = `vrlauncher://launch?module=${encodeURIComponent(module.module_id)}&session=${encodeURIComponent(session_token)}&scenario=${encodeURIComponent(scenario_index)}&scenarioId=${encodeURIComponent(scenario_id)}&token=${encodeURIComponent(jwt)}`;
       window.location.href = url;
     } catch (err) {
       console.error(err);

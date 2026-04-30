@@ -160,6 +160,8 @@ def test_launch_module_success(client, db, make_user, make_module, make_assignme
 
     assert response.status_code == 200
     assert response.json()["scenario_id"] == scenario.scenario_id
+    assert response.json()["scenario_index"] == scenario.scenario_index
+    assert response.json()["current_scenario_index"] == 0
     assert "session_token" in response.json()
 
 
@@ -187,6 +189,29 @@ def test_launch_module_rejects_completed_progress(client, make_user, make_module
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Module already completed"
+
+
+def test_launch_module_resumes_existing_progress(client, make_user, make_module, make_assignment, make_progress, make_scenario, current_user_override):
+    user = make_user(username="resume_user", email="resume@test.com")
+    module = make_module(module_name="Resume Module")
+    make_scenario(module.module_id, 0, name="Scenario Zero")
+    resumed = make_scenario(module.module_id, 1, name="Scenario One")
+    make_assignment(user.user_id, module.module_id, access_level=AccessLevel.FULL)
+    make_progress(
+        user.user_id,
+        module.module_id,
+        status=ProgressStatus.INPROGRESS,
+        current_scenario_index=1,
+        total_score=15,
+    )
+    client.app.dependency_overrides[get_current_active_user] = current_user_override(user)
+
+    response = client.post("/launch-module", json={"module_id": module.module_id})
+
+    assert response.status_code == 200
+    assert response.json()["scenario_id"] == resumed.scenario_id
+    assert response.json()["scenario_index"] == 1
+    assert response.json()["current_scenario_index"] == 1
 
 
 def test_create_scenario_success(client, make_user, make_module, current_user_override):

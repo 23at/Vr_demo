@@ -352,6 +352,8 @@ def launch_module(
     return {
         "module_id": module.module_id,
         "scenario_id": scenario.scenario_id,
+        "scenario_index": scenario.scenario_index,
+        "current_scenario_index": progress.current_scenario_index,
         "session_token": session_token
     }
 
