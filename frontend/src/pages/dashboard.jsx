@@ -45,8 +45,7 @@ export default function Dashboard() {
     try {
       const res = await api.post("/launch-module", { module_id: module.module_id });
       const { session_token, scenario_id, scenario_index } = res.data;
-      const url = `vrlauncher://launch?module=${encodeURIComponent(module.module_id)}&session=${encodeURIComponent(session_token)}&scenario=${encodeURIComponent(scenario_id)}&scenarioIndex=${encodeURIComponent(scenario_index)}&token=${encodeURIComponent(jwt)}`;
-      window.location.href = url;
+      const url = `vrlauncher://launch?module=${encodeURIComponent(module.module_id)}&session=${encodeURIComponent(session_token)}&scenario_index=${encodeURIComponent(scenario_index)}&scenarioId=${encodeURIComponent(scenario_id)}&token=${encodeURIComponent(jwt)}`;
     } catch (err) {
       console.error(err);
       alert("Failed to launch module");
